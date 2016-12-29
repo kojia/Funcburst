@@ -1,0 +1,172 @@
+{
+    "name": "明治",
+    "sub": [
+        {
+            "name": "お菓子",
+            "parents": []
+        }
+    ],
+    "children": [
+        {
+            "name": "チョコ菓子シリーズ",
+            "sub": [
+                {
+                    "name": "チョコレート菓子",
+                    "parents": [
+                        "/sub/0"
+                    ]
+                }
+            ],
+            "children": [
+                {
+                    "name": "きのこの山",
+                    "sub": [
+                        {
+                            "name": "キノコ型チョコ",
+                            "parents": [
+                                "/children/0/sub/0"
+                            ]
+                        },
+                        {
+                            "name": "軸クラッカー",
+                            "parents": [
+                                "/children/0/sub/0"
+                            ]
+                        }
+                    ],
+                    "children": [
+                        {
+                            "name": "味わいミント",
+                            "sub": [
+                                {
+                                    "name": "ミントチョコ",
+                                    "parents": [
+                                        "/children/0/children/0/sub/0"
+                                    ]
+                                },
+                                {
+                                    "name": "ココアクラッカー",
+                                    "parents": [
+                                        "/children/0/children/0/sub/1"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "黒糖きなこ",
+                            "sub": [
+                                {
+                                    "name": "黒糖チョコ",
+                                    "parents": [
+                                        "/children/0/children/0/sub/0"
+                                    ]
+                                },
+                                {
+                                    "name": "きなこチョコ",
+                                    "parents": [
+                                        "/children/0/children/0/sub/0"
+                                    ]
+                                },
+                                {
+                                    "name": "プレーンクラッカー",
+                                    "parents": [
+                                        "/children/0/children/0/sub/1"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "チョコバナナ",
+                            "sub": [
+                                {
+                                    "name": "ミルクチョコ",
+                                    "parents": [
+                                        "/children/0/children/0/sub/0"
+                                    ]
+                                },
+                                {
+                                    "name": "バナナチョコ",
+                                    "parents": [
+                                        "/children/0/children/0/sub/0"
+                                    ]
+                                },
+                                {
+                                    "name": "ココアクラッカー",
+                                    "parents": [
+                                        "/children/0/children/0/sub/1"
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "たけのこの里",
+                    "sub": [
+                        {
+                            "name": "たけのこ型チョコ",
+                            "parents": []
+                        },
+                        {
+                            "name": "サクサククッキー",
+                            "parents": []
+                        }
+                    ],
+                    "children": [
+                        {
+                            "name": "マカダミアクッキー",
+                            "sub": [
+                                {
+                                    "name": "ミルクチョコ",
+                                    "parents": []
+                                },
+                                {
+                                    "name": "バニラシード入りホワイトチョコ",
+                                    "parents": []
+                                },
+                                {
+                                    "name": "マカダミアナッツ入りクッキー",
+                                    "parents": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "焼き栗",
+                            "sub": [
+                                {
+                                    "name": "黒糖チョコ",
+                                    "parents": []
+                                },
+                                {
+                                    "name": "焼き栗チョコ",
+                                    "parents": []
+                                },
+                                {
+                                    "name": "カシューナッツ入りクッキー",
+                                    "parents": []
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "すぎのこ村",
+                    "sub": [
+                        {
+                            "name": "チョココーティング",
+                            "parents": []
+                        },
+                        {
+                            "name": "クラッシュアーモンド",
+                            "parents": []
+                        },
+                        {
+                            "name": "軸ビスケット",
+                            "parents": []
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

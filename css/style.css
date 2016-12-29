@@ -1,0 +1,136 @@
+
+header,
+main,
+footer {
+	padding-left: 300px;
+}
+
+#slide-out {
+    padding-left: 5px;
+	padding-right: 5px;
+}
+
+.container,
+#treeSvg {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+}
+
+html,
+body,
+main {
+    height: 100%;
+}
+
+#treeSvg {
+	padding: 10px;
+}
+
+.btn {
+	text-transform: none;
+}
+
+#top-nav{
+	height: 42px;
+	line-height: 42px;
+}
+#top-nav li {
+	line-height: 90%;
+	margin: 4px 5px;
+}
+#top-nav .btn, #top-nav button{
+	padding-left: 1rem;
+	padding-right: 1rem;
+	height: 34px;
+	line-height: 34px;
+}
+#top-nav .file-path-wrapper {
+	line-height: 42px;
+	padding-left: 0.5rem;
+	margin-right: 1rem;
+}
+#top-nav .file-path {
+	padding-left: 0.5rem;
+	margin-bottom: 0.5rem;
+	font-size: 1rem;
+	border-style: none none solid;
+	border-bottom-width: 1px;
+}
+
+.side-nav li{
+	line-height: 3;
+}
+
+ul.collection.with-header li {
+	padding-top: 0.5rem;
+	padding-bottom: 0.5rem;
+	padding-left: 0.5rem;
+	padding-right: 0.5rem;
+}
+ul.collection.with-header li.collection-header {
+	padding-top: 0.5rem;
+	padding-bottom: 0.5rem;
+}
+ul.collection.with-header li.collection-item {
+	padding-left: 2rem;
+}
+ul.collection.with-header li.collection-item.add{
+	margin: 0;
+	width: 100%;
+}
+ul.collection.with-header li.collection-item.add button {
+	margin: 0;
+	width: 100%;
+}
+
+#node-edit, #subnode-edit {
+	color: black;
+	line-height: 1.5rem;
+}
+#node-edit h6 {
+	color: lightseagreen;
+}
+#node-edit input, #subnode-edit input {
+	margin-bottom: 0.2rem;
+	height: 1.2rem;
+}
+#node-children .collection-item, 
+#node-subnode .collection-item,
+#subnode-belonging .collection-item,
+#subnode-parents .collection-item,
+#subnode-children .collection-item {
+	margin-top: 0;
+	display: table;
+}
+#subnode-parent li{
+	padding: 0.5rem;
+}
+
+#subnode-parent .sub-prnt-name,
+#subnode-parent .sub-belonging-name {
+	line-height: 1.3;
+}
+
+#subnode-parent .sub-belonging-name {
+	color: gray;
+	text-align: right;
+}
+.suffix {
+	display: table-cell;
+	width:1%;
+	cursor: pointer;
+}
+
+.glass {
+	background: rgba(255,255,255,0.９);
+}
+
+
+@media only screen and (max-width: 992px) {
+	header,
+	main,
+	footer {
+		padding-left: 0;
+	}
+}

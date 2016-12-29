@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title>d3-tree</title>
+
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link type="text/css" rel="stylesheet" href="lib/materialize/css/materialize.min.css" media="screen,projection"></link>
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"></link>
+	<link type="text/css" rel="stylesheet" href="css/style.css"></link>
+
+	<script type="text/javascript" src="lib/jquery-2.1.1.min.js"></script>
+	<script type="text/javascript" src="lib/materialize/js/materialize.min.js"></script>
+	<script type="text/javascript" src="lib/d3/d3.min.js"></script>
+	<script type="text/javascript" src="lib/node-jsonpointer-4.0.0/jsonpointer.js"></script>
+	<script type="text/javascript" src="lib/Sortable-1.4.0/Sortable.js"></script>
+</head>
+
+<body>
+
+	<!--navigation bar-->
+	<header>
+		<nav class="top-nav teal darken-1" id="top-nav">
+			<div class="nav-wrapper">
+				<!--jsonfile open form-->
+				<ul>
+					<li>
+						<form action="#">
+							<div class="file-field input-field">
+								<div class="waves-effect waves-light btn">
+									<span>Open</span>
+									<input type="file" id="readjson">
+								</div>
+								<div class="file-path-wrapper">
+									<input class="file-path validate" type="text">
+								</div>
+							</div>
+						</form>
+					</li>
+					<!--jsonfile save button-->
+					<li>
+						<button class="waves-effect waves-light btn" id="download" type="button">
+								Download
+						</button>
+					</li>
+					<li>
+						<button class="waves-effect waves-light btn" id="dataURI" type="button">
+								JSON
+						</button>
+					</li>
+					<!--SVG save button-->
+					<li>
+						<button class="waves-effect waves-light btn" id="show-svg" type="button">
+								SVG
+						</button>
+					</li>
+					<!--update button-->
+					<li>
+						<button class="waves-effect waves-light btn" id="update" type="button">
+								Update
+						</button>
+					</li>
+				</ul>
+			</div>
+		</nav>
+		<ul id="slide-out" class="side-nav teal lighten-2" style="transform: translateX(0%);">
+<!--Node Editer-->
+<li>
+	<div id="node-edit" class="card-panel teal" style="display:none">
+<ul class="collection with-header">
+	<li class="collection-header">
+		<h6>Name</h6>
+	</li>
+	<li class="collection-item">
+		<form name="nodeName">
+			<input value="" id="name" type="text">
+		</form>
+	</li>
+</ul>
+<ul class="collection with-header parent">
+	<li class="collection-header">
+		<h6>Parent</h6>
+	</li>
+</ul>
+<ul class="collection with-header children" id="node-children">
+	<li class="collection-header">
+		<h6>Children</h6>
+	</li>
+</ul>
+<ul class="collection with-header subnode" id="node-subnode">
+	<li class="collection-header">
+		<h6>Sub Nodes</h6>
+	</li>
+</ul>
+</div>
+</li>
+
+<!--Sub Node Editer-->
+<li>
+	<div id="subnode-edit" class="card-panel lime lighten-2" style="display:none">
+<ul class="collection with-header">
+	<li class="collection-header">
+		<h6>Name</h6>
+	</li>
+	<li class="collection-item">
+		<form name="subnodeName">
+			<input value="" id="subname" type="text">
+		</form>
+	</li>
+</ul>
+<ul class="collection with-header" id="subnode-belonging">
+	<li class="collection-header">
+		<h6>Belonging Node</h6>
+	</li>
+</ul>
+<ul class="collection with-header" id="subnode-parents">
+	<li class="collection-header">
+		<h6>Parent</h6>
+	</li>
+</ul>
+<ul class="collection with-header" id="subnode-children">
+	<li class="collection-header">
+		<h6>Children</h6>
+	</li>
+</ul>
+</div>
+</li>
+</ul>
+</header>
+
+<!-- SVG field-->
+<main>
+	<div class="container teal lighten-5">
+		<div id="treeSvg"> </div>
+	</div>
+</main>
+
+<script type="text/javascript" src="app/function_tree.js"></script>
+
+<!--parent select SideNav in sub node edit-->
+<ul id="subnode-parent" class="side-nav collection with-header glass">
+	<li class="collection-header">
+		Select Additional Parent Subnode
+	</li>
+</ul>
+<a href="#" data-activates="subnode-parent" id="side-subnode-parent" class="button-collapse"></a>
+
+
+</body>
+
+</html>
