@@ -72,6 +72,14 @@ $("#show-svg").click(function () {
     window.open("data:image/svg+xml,"
         + encodeURIComponent($("<div>").append(showsvg).html()));
 });
+// reload tree view
+$("#reload").click(function () {
+    d3.select("#node-edit")
+        .style("display", "none");
+    d3.select("#subnode-edit")
+        .style("display", "none");
+    makeTree(dataset);
+})
 
 
 function makeTree(dataset) {
@@ -130,9 +138,10 @@ function makeTree(dataset) {
                 jptrIndex++
             } while (1)
             console.log("a:" + jptrA + " b:" + jptrB + " c:" + jptrA.substring(0, jptrIndex));
-            var rootAandB = perseJptr(root, jptrA.substring(0, jptrIndex-10))
+            // jptrAとjptrBがともに持つ親ノード
+            var rootAandB = perseJptr(root, jptrA.substring(0, jptrIndex - 10))
             console.log(rootAandB);
-            var widenForward = function(node, wide, root){
+            var widenForward = function (node, wide, root) {
 
             };
         }
