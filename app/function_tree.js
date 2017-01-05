@@ -345,8 +345,8 @@ function drawNode(node) {
     node.append("circle")
         .attr("r", 4)
         .attr("fill", "steelblue");
-    node.select("text")
-        .remove();
+    // node.select("text")
+    //     .remove();
     node.append("text")
         .attr("font-size", getNodeHeight() + "px");
     node.select("text").html(function (d) { return tspanStringify(d.label, getNodeNameWidth()) });
