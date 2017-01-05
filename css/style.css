@@ -101,9 +101,9 @@ ul.collection.with-header li.collection-item.add button {
 }
 #node-children .collection-item, 
 #node-subnode .collection-item,
-#subnode-belonging .collection-item,
-#subnode-parents .collection-item,
-#subnode-children .collection-item {
+/*#subnode-belonging .collection-item,*/
+/*#subnode-children .collection-item */
+#subnode-parents .collection-item{
 	margin-top: 0;
 	display: table;
 }
