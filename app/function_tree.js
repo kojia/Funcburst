@@ -118,12 +118,12 @@ function makeTree(dataset) {
         var sep = 3;  // space between nodes
 
         // ノードの幅広さを求める関数
+        // 戻り値: 幅のarray, index 0: 上側の余白, index 1: 下側の余白
         var getWidth = function (node) {
             // 与えられたノードの幅を求める（子ノードを探索しない)
             var _oneNodeWidth = function (node) {
                 var width = 0;
                 width += node.label.length;
-                console.log("width:" + getStrWidth(node.data.name) + width);
                 node.data.sub.forEach(function (sub) {
                     width += Math.ceil(getStrWidth(sub.name) / getSubNodeNameWidth());
                 })
@@ -138,7 +138,6 @@ function makeTree(dataset) {
             var _result = Array();  //index 0: 上側の余白, index 1: 下側の余白
             _result[0] = childrenWidth / 2;
             _result[1] = width > childrenWidth / 2 ? width : childrenWidth / 2;
-            console.log(_result);
             return _result;
         };
 
@@ -160,17 +159,71 @@ function makeTree(dataset) {
             var jptrIndex = 0;
             do {
                 if (jptrA[jptrIndex] != jptrB[jptrIndex]) {
+                    // aとbが兄弟関係の場合: jptrは数字が異なる
+                    // aとbが親子関係の場合: jptrは"/"の有無で違いが発生
+                    if (jptrA[jptrIndex] == "/") {
+                    } else {
+                        while (jptrA[jptrIndex] != "/") {
+                            jptrIndex--;
+                        }
+                        jptrIndex -= 9;
+                    }
                     break;
                 }
                 jptrIndex++
             } while (1)
             // jptrAとjptrBがともに持つ親ノード
-            var rootAandB = perseJptr(root, jptrA.substring(0, jptrIndex - 10))
-            var widenForward = function (node, wide, root) {
-
+            var rootAandB = perseJptr(root, jptrA.substring(0, jptrIndex))
+            // 共通の親ノードまで遡ってノード幅広さを拡張する
+            var widenForward = function (node, root, width = undefined) {
+                var _width;
+                if (width === undefined) {
+                    _width = getWidth(node);
+                } else {
+                    _width = width;
+                }
+                if (node.parent == root || node == root) {
+                    return { "node": node, "width": _width };
+                } else {
+                    // 同じ親に属するノードのうち、引数ノードより上側のノードの幅を加算
+                    for (var i = 0; i < node.parent.children.indexOf(node); i++) {
+                        _width[0] += getWidth(node.parent.children[i])[1]
+                            + getWidth(node.parent.children[i])[1]
+                            + sep;
+                    }
+                    // 同じ親に属するノードのうち、引数ノードより下側のノードの幅を加算
+                    for (var i = node.parent.children.indexOf(node) + 1; i < node.parent.children.length; i++) {
+                        _width[1] += getWidth(node.parent.children[i])[0]
+                            + getWidth(node.parent.children[i])[1]
+                            + sep;
+                    }
+                    return widenForward(node.parent, root, _width);
+                }
             };
+            // jptrAとjptrBを共通の親ノードまで遡る
+            var widenA = widenForward(a, rootAandB);
+            var widenB = widenForward(b, rootAandB);
+            if (widenA.node == rootAandB || widenB.node == rootAandB) {
+                return sep*2;
+            }
+            // jptrAとjptrBの距離を求める
+            var a_i = widenA.node.parent.children.indexOf(widenA.node);
+            var b_i = widenB.node.parent.children.indexOf(widenB.node);
+            var begin = a_i > b_i ? b_i : a_i;
+            var end = a_i > b_i ? a_i : b_i;
+            var _result = 0;
+            for (var i = begin; i < end; i++) {
+                if (i == a_i) {
+                    _result += widenA.width[1] + sep;
+                } else if (i == b_i) {
+                    _result += widenB.width[1] + sep;
+                } else {
+                    _result += getWidth(widenA.node.parent.children[i])[1] + sep;
+                }
+            }
+            console.log(widenA.node[0] + "  res: " + _result);
+            return _result;
         }
-        return a.x < b.x ? a.data.sub.length + sep : b.data.sub.length + sep;
     };
 
     // create tree layout
