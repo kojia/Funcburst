@@ -430,7 +430,10 @@ function clickNode(data) {
     document.nodeName.reset();  // reset form
     d3.select("#node-edit #name")
         .attr("value", data.data.name)
-        .on("change", function () { data.data.name = d3.event.target.value; update(); });
+        .on("change", function () { 
+            data.data.name = d3.event.target.value; 
+            makeTree(dataset); 
+        });
     // bind parent
     var prnt = d3.select("#node-edit .collection.parent")
         .selectAll("li.collection-item")
@@ -629,7 +632,10 @@ function clickSubNode(data) {
     document.subnodeName.reset();  // reset form
     d3.select("#subnode-edit #subname")
         .attr("value", data.data.name)
-        .on("change", function () { data.data.name = d3.event.target.value; update(); });
+        .on("change", function () { 
+            data.data.name = d3.event.target.value; 
+            makeTree(dataset); 
+        });
 
     // bind belonging node
     var belonging = d3.select("#subnode-belonging")
@@ -824,13 +830,6 @@ function clearEditer() {
         .style("display", "none");
 }
 
-
-// Update tree display (without re-computing node point)
-function update() {
-    var node = d3.select(".treeContainer").selectAll(".node")
-        .data(root.descendants());
-    drawNode(node);
-}
 // create dictionary of new node
 function makeNewNode(name) {
     var dic = {};
