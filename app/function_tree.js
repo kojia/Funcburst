@@ -892,7 +892,7 @@ function splitStrByWidth(str, width) {
         for (var i = 0; i < str.length; i++) {
             if (getStrWidth(str.substring(index, i)) > width) {
                 arr.push(str.substring(index, i - 1));
-                index = i;
+                index = i - 1;
             }
         }
         arr.push(str.slice(index));
