@@ -81,6 +81,18 @@ $("#reload").click(function () {
     makeTree(dataset);
 })
 
+function getNodeHeight() {
+    return 15;
+}
+function getNodeWidth() {
+    return 200;
+}
+function getNodeNameWidth() {
+    return getNodeWidth() - 20;
+}
+function getSubNodeNameWidth() {
+    return getNodeWidth() - 20;
+}
 
 function makeTree(dataset) {
     // svg initialize
@@ -90,23 +102,39 @@ function makeTree(dataset) {
     root = d3.hierarchy(dataset, function (d) {
         return d["children"];
     });
+    // set node name label string array to fit node width
+    root.each(function (node) {
+        node.label = splitStrByWidth(node.data.name, getNodeNameWidth());
+    });
 
     // tree setting
     var tree = d3.tree()
-        .size([$(window).height() - $("#top-nav").height(), $("#treeSvg").width() * 0.9])
+        // .size([$(window).height() - $("#top-nav").height(), $("#treeSvg").width() * 0.9])
+        .nodeSize([getNodeHeight(), getNodeWidth()])
         .separation(nodeSeparate);
 
     function nodeSeparate(a, b) {
         console.log(a.data.name, b.data.name);
-        var sep = 3;
+        var sep = 3;  // space between nodes
+
         // ノードの幅広さを求める関数
         var getWidth = function (node) {
+            // 与えられたノードの幅を求める（子ノードを探索しない)
+            var _oneNodeWidth = function (node) {
+                var width = 0;
+                width += node.label.length;
+                console.log("width:" + getStrWidth(node.data.name) + width);
+                node.data.sub.forEach(function (sub) {
+                    width += Math.ceil(getStrWidth(sub.name) / getSubNodeNameWidth());
+                })
+                return width;
+            }
             var childrenWidth = node.children == undefined ? 0
                 : node.children
                     .reduce(function (_a, _b) {
-                        return _a + _b.data.sub.length + sep;
+                        return _a + _oneNodeWidth(_b) + sep;
                     }, 0);
-            var width = node.data.sub == undefined ? 0 : node.data.sub.length;
+            var width = _oneNodeWidth(node);
             var _result = Array();  //index 0: 上側の余白, index 1: 下側の余白
             _result[0] = childrenWidth / 2;
             _result[1] = width > childrenWidth / 2 ? width : childrenWidth / 2;
@@ -124,7 +152,6 @@ function makeTree(dataset) {
                 _result += getWidth(a.parent.children[i])[1] + sep;
             }
             _result += getWidth(a.parent.children[end])[0];
-            console.log(_result);
             return _result;
         }
         else {
@@ -137,10 +164,8 @@ function makeTree(dataset) {
                 }
                 jptrIndex++
             } while (1)
-            console.log("a:" + jptrA + " b:" + jptrB + " c:" + jptrA.substring(0, jptrIndex));
             // jptrAとjptrBがともに持つ親ノード
             var rootAandB = perseJptr(root, jptrA.substring(0, jptrIndex - 10))
-            console.log(rootAandB);
             var widenForward = function (node, wide, root) {
 
             };
@@ -148,50 +173,8 @@ function makeTree(dataset) {
         return a.x < b.x ? a.data.sub.length + sep : b.data.sub.length + sep;
     };
 
-    console.log(root.data);
+    // create tree layout
     tree(root);
-
-
-    // treeを入れるコンテナを作成
-    d3.select("#treeSvg")
-        .append("svg")
-        .attr("width", "100%")
-        .attr("height", "100%")
-        .call(d3.zoom()
-            .scaleExtent([.2, 10])
-            .translateExtent([[-500, -500], [$("#treeSvg").width() + 500, $(window).height() + 500]])
-            .on("zoom", zoomed))
-        .append("g")
-        .attr("class", "treeContainer")
-
-    function zoomed() {
-        d3.select(".treeContainer").attr("transform", d3.event.transform);
-    }
-
-    // ノード作成
-    var node = d3.select(".treeContainer")
-        .selectAll(".node")
-        .data(root.descendants())
-        .enter()
-        .append("g");
-    drawNode(node)
-
-    // ノード間を線でつなぐ
-    d3.select(".treeContainer").selectAll(".link")
-        .data(root.descendants().slice(1))
-        .enter()
-        .append("path")
-        .attr("class", "link")
-        .attr("fill", "none")
-        .attr("stroke-width", 2)
-        .attr("stroke-dasharray", [2, 1])
-        .attr("stroke", "black")
-        .attr("d", function (d) {
-            return "M" + d.y + "," + d.x
-                + "C" + (d.y + d.parent.y) / 2 + "," + d.x
-                + " " + (d.y + d.parent.y) / 2 + "," + d.parent.x
-                + " " + d.parent.y + "," + d.parent.x;
-        });
 
     // sub nodeの計算
     // 幅方向単位長の計算
@@ -211,20 +194,24 @@ function makeTree(dataset) {
     var kx = (right.x - left.x) / sep; // 単位長
     // tree-nodesにsub nodesの情報を流し込む
     root.each(function (node) {
-        node.sub = Array();
+        node.sub = Array();  // create array for sub-node
+        var lines = node.label.length;  // x座標オフセット量
         node.data.sub.forEach(function (subElm, i) {
             // parent のjsonpointerから対応するノードを得る
             var subPrnts = subElm.parents.map(function (p) {
                 return perseJptr(root, p);
             });
             node.sub.push({
-                "x": node.x + kx * (i + 1),
+                "x": node.x + kx * lines,
                 "y": node.y + kx / 2,
                 "data": subElm,
                 "parents": subPrnts,
-                "belonging": node  // subnodeが所属しているnode
+                "belonging": node,  // subnodeが所属しているnode
+                "label": splitStrByWidth(subElm.name, getSubNodeNameWidth())
             });
-            // ノードにchildrenを登録
+            // sub-nodeのlinesを追加する
+            lines += splitStrByWidth(subElm.name, getSubNodeNameWidth()).length;
+            // 引数のノードを親ノードの子ノードとして登録
             subPrnts.forEach(function (prntNode) {
                 if (prntNode.children === undefined) {
                     prntNode.children = Array();
@@ -251,16 +238,56 @@ function makeTree(dataset) {
             .reduce(function (a, b) { return a.concat(b); }, Array());
     }
     // sub nodeをつなぐlinkのcolorをparentごとに設定
-    var getSubNodeLinkColer = function (desc) {
-        var dict = {};
-        desc.forEach(function (d) {
-            if (!(d.data.name in dict)) {
-                dict[d.data.name] = randHSLa([0, 360], [100, 100], [40, 50], [0.6, 0.6]);
-            }
-        })
-        return dict;
-    }
-    var subLinkColor = getSubNodeLinkColer(root.subDescendants());
+    // var getSubNodeLinkColer = function (desc) {
+    //     var dict = {};
+    //     desc.forEach(function (d) {
+    //         if (!(d.data.name in dict)) {
+    //             dict[d.data.name] = randHSLa([0, 360], [100, 100], [40, 50], [0.6, 0.6]);
+    //         }
+    //     })
+    //     return dict;
+    // }
+    // var subLinkColor = getSubNodeLinkColer(root.subDescendants());
+
+    // treeを入れるコンテナを作成
+    d3.select("#treeSvg")
+        .append("svg")
+        .attr("width", "100%")
+        .attr("height", "100%")
+        .call(d3.zoom()
+            .scaleExtent([.2, 10])
+            .translateExtent([[$("#treeSvg").width() * -2, $(window).height() * -2], [$("#treeSvg").width() * 2, $(window).height() * 2]])
+            .on("zoom", function () {
+                d3.select(".treeContainer").attr("transform", d3.event.transform);
+            }))
+        .append("g")
+        .attr("class", "treeContainer")
+
+    // ノード作成
+    var node = d3.select(".treeContainer")
+        .selectAll(".node")
+        .data(root.descendants())
+        .enter()
+        .append("g");
+    drawNode(node)
+
+    // ノード間を線でつなぐ
+    d3.select(".treeContainer").selectAll(".link")
+        .data(root.descendants().slice(1))
+        .enter()
+        .append("path")
+        .attr("class", "link")
+        .attr("fill", "none")
+        .attr("stroke-width", 2)
+        .attr("stroke-dasharray", [2, 1])
+        .attr("stroke", "black")
+        .attr("d", function (d) {
+            return "M" + d.y + "," + d.x
+                + "C" + (d.y + d.parent.y) / 2 + "," + d.x
+                + " " + (d.y + d.parent.y) / 2 + "," + d.parent.x
+                + " " + d.parent.y + "," + d.parent.x;
+        });
+
 
     // sub nodeをSVG描画
     var subNode = d3.select('.treeContainer')
@@ -272,8 +299,6 @@ function makeTree(dataset) {
         .attr("transform", function (d) {
             return "translate(" + d.y + "," + d.x + ")";
         });
-
-    drawSubNode(subNode);
 
     //subノードをつなぐ線の色を設定
     var xArray = root.subDescendants()
@@ -304,6 +329,9 @@ function makeTree(dataset) {
                 + " " + (d.child.y + d.parent.y) / 1.8 + "," + d.parent.x
                 + " " + d.parent.y + "," + d.parent.x;
         });
+
+    // sub-nodeのcircleとtextを描画
+    drawSubNode(subNode);
 };
 
 function drawNode(node) {
@@ -312,18 +340,27 @@ function drawNode(node) {
         .attr("transform", function (d) {
             return "translate(" + d.y + "," + d.x + ")";
         });
-    node.select("circle")
-        .remove();
+    // node.select("circle")
+    //     .remove();
     node.append("circle")
         .attr("r", 4)
         .attr("fill", "steelblue");
     node.select("text")
         .remove();
     node.append("text")
-        .text(function (d) { return d.data.name; })
-        .attr("y", 0);
+        .attr("font-size", getNodeHeight() + "px");
+    node.select("text").html(function (d) { return tspanStringify(d.label, getNodeNameWidth()) });
     node.on("click", clickNode);
 }
+function tspanStringify(strArr, width) {
+    var _html = "";
+    strArr.forEach(function (str, index) {
+        _html += '<tspan class="line' + index + '"' + 'y="' + index + 'em" x="0em">'
+            + str + '</tspan>';
+    });
+    return _html;
+}
+
 // ノードクリック時の挙動
 function clickNode(data) {
     console.log(data);
@@ -515,8 +552,11 @@ function drawSubNode(subNode) {
         .attr("r", 3)
         .attr("fill", "green");
     subNode.append("text")
-        .text(function (d) { return d.data.name; })
+        .attr("font-size", getNodeHeight() + "px")
+        .attr("fill", "gray")
         .attr("dominant-baseline", "middle");
+    subNode.select("text")
+        .html(function (d) { return tspanStringify(d.label, getSubNodeNameWidth()) });
     subNode.on("click", clickSubNode);
 }
 
@@ -832,4 +872,30 @@ function randHSLa(h = [0, 360], s = [0, 100], l = [0, 100], a = [0, 1]) {
     chk(a, 0, 1);
     var rand = function (arr) { return Math.random() * (arr[1] - arr[0] + 1) + arr[0] };
     return "hsla(" + rand(h) + "," + rand(s) + "%," + rand(l) + "%, " + rand(a) + ")";
+}
+
+// 文字列幅測定
+function getStrWidth(str) {
+    var e = $("#ruler");
+    var width = e.text(str).get(0).offsetWidth;
+    e.empty();
+    return width;
+}
+
+// 文字列を指定した幅で区切って配列で返す
+function splitStrByWidth(str, width) {
+    if (getStrWidth(str) <= width) {
+        return Array(str);
+    } else {
+        var arr = Array();
+        var index = 0;
+        for (var i = 0; i < str.length; i++) {
+            if (getStrWidth(str.substring(index, i)) > width) {
+                arr.push(str.substring(index, i - 1));
+                index = i;
+            }
+        }
+        arr.push(str.slice(index));
+        return arr;
+    }
 }
