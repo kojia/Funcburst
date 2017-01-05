@@ -61,7 +61,7 @@ $("#dataURI").click(function () {
 });
 // open svg in another window
 $("#show-svg").click(function () {
-    var svg = $("#treeSvg .treeContainer");
+    var svg = $("#treeSvg");
     var showsvg = $("<svg>");
     showsvg.attr({
         "xmlns": "http://www.w3.org/2000/svg",
@@ -204,7 +204,7 @@ function makeTree(dataset) {
             var widenA = widenForward(a, rootAandB);
             var widenB = widenForward(b, rootAandB);
             if (widenA.node == rootAandB || widenB.node == rootAandB) {
-                return sep*2;
+                return sep * 2;
             }
             // jptrAとjptrBの距離を求める
             var a_i = widenA.node.parent.children.indexOf(widenA.node);
@@ -244,7 +244,8 @@ function makeTree(dataset) {
             right = node;
         }
     });
-    var kx = (right.x - left.x) / sep; // 単位長
+    var treeWidth = (right.x - left.x) ? (right.x - left.x) : 1;
+    var kx = treeWidth / sep; // 単位長
     // tree-nodesにsub nodesの情報を流し込む
     root.each(function (node) {
         node.sub = Array();  // create array for sub-node
@@ -290,31 +291,33 @@ function makeTree(dataset) {
             })
             .reduce(function (a, b) { return a.concat(b); }, Array());
     }
-    // sub nodeをつなぐlinkのcolorをparentごとに設定
-    // var getSubNodeLinkColer = function (desc) {
-    //     var dict = {};
-    //     desc.forEach(function (d) {
-    //         if (!(d.data.name in dict)) {
-    //             dict[d.data.name] = randHSLa([0, 360], [100, 100], [40, 50], [0.6, 0.6]);
-    //         }
-    //     })
-    //     return dict;
-    // }
-    // var subLinkColor = getSubNodeLinkColer(root.subDescendants());
 
     // treeを入れるコンテナを作成
-    d3.select("#treeSvg")
+    var zoom = d3.zoom()
+        .scaleExtent([.2, 10])
+        .translateExtent(
+        [[$("#treeSvg").width() * -2, $("#treeSvg").height() * -2],
+        [$("#treeSvg").width() * 2, $("#treeSvg").height() * 2]])
+        .on("zoom", zoomed);
+    function zoomed() {
+        d3.select(".treeContainer").attr("transform", d3.event.transform);
+    }
+
+    var svg = d3.select("#treeSvg")
         .append("svg")
         .attr("width", "100%")
         .attr("height", "100%")
-        .call(d3.zoom()
-            .scaleExtent([.2, 10])
-            .translateExtent([[$("#treeSvg").width() * -2, $(window).height() * -2], [$("#treeSvg").width() * 2, $(window).height() * 2]])
-            .on("zoom", function () {
-                d3.select(".treeContainer").attr("transform", d3.event.transform);
-            }))
-        .append("g")
-        .attr("class", "treeContainer")
+        .call(zoom);
+    svg.append("g")
+        .attr("class", "treeContainer");
+    svg.call(zoom.transform, d3.zoomIdentity.scale(0.5));
+
+    var k = $("#treeSvg").height() / treeWidth * 0.9;
+    var ty = treeWidth * k / 2;
+    if (k > 1) { k = 1; ty = $("svg").height() / 2; }
+    svg.call(zoom.transform, d3.zoomIdentity
+        .translate(10, ty)
+        .scale(k));
 
     // ノード作成
     var node = d3.select(".treeContainer")
