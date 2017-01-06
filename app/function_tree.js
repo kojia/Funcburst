@@ -69,7 +69,7 @@ $("#show-svg").click(function () {
         "height": $("#treeSvg").height() * 1.1
     });
     showsvg.html(svg.html());
-    window.open("data:image/svg+xml,"
+    window.open("data:image/svg+xml;charset=utf-8,"
         + encodeURIComponent($("<div>").append(showsvg).html()));
 });
 // reload tree view
