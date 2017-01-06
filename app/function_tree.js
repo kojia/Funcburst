@@ -430,9 +430,9 @@ function clickNode(data) {
     document.nodeName.reset();  // reset form
     d3.select("#node-edit #name")
         .attr("value", data.data.name)
-        .on("change", function () { 
-            data.data.name = d3.event.target.value; 
-            makeTree(dataset); 
+        .on("change", function () {
+            data.data.name = d3.event.target.value;
+            makeTree(dataset);
         });
     // bind parent
     var prnt = d3.select("#node-edit .collection.parent")
@@ -537,7 +537,7 @@ function clickNode(data) {
         onUpdate: function (evt) {
             var _old = evt.oldIndex;
             var _new = evt.newIndex;
-            var _jptr = getJptr(data);
+            var _jptr = data == root ? "" : getJptr(data);
             var _jptr_old = _jptr + "/children/" + (_old - 1);
             var _jptr_new = _jptr + "/children/" + (_new - 1);
             // replace json pointer of sub node
@@ -587,7 +587,7 @@ function clickNode(data) {
         onUpdate: function (evt) {
             var _old = evt.oldIndex;
             var _new = evt.newIndex;
-            var _jptr = getJptr(data);
+            var _jptr = data == root ? "" : getJptr(data);
             var _jptr_old = _jptr + "/sub/" + (_old - 1);
             var _jptr_new = _jptr + "/sub/" + (_new - 1);
             // temporary variable for sub-node element of evt.oldIndex
@@ -632,9 +632,9 @@ function clickSubNode(data) {
     document.subnodeName.reset();  // reset form
     d3.select("#subnode-edit #subname")
         .attr("value", data.data.name)
-        .on("change", function () { 
-            data.data.name = d3.event.target.value; 
-            makeTree(dataset); 
+        .on("change", function () {
+            data.data.name = d3.event.target.value;
+            makeTree(dataset);
         });
 
     // bind belonging node
