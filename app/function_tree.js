@@ -102,9 +102,31 @@ function makeTree(dataset) {
     root = d3.hierarchy(dataset, function (d) {
         return d["children"];
     });
-    // set node name label string array to fit node width
-    root.each(function (node) {
+    
+    root.eachBefore(function (node) {
+        // set node name label string array to fit node width
         node.label = splitStrByWidth(node.data.name, getNodeNameWidth());
+        // set sub-node data
+        node.sub = Array();  // create array for sub-node
+        node.data.sub.forEach(function (subElm, i) {
+            // sub-nodeの親nodeのarrayを取得
+            var subPrnts = subElm.parents.map(function (p) {
+                return perseJptr(root, p);
+            });
+            node.sub.push({
+                "data": subElm,
+                "parents": subPrnts,
+                "belonging": node,  // subnodeが所属しているnode
+                "label": splitStrByWidth(subElm.name, getSubNodeNameWidth())
+            });
+            // 引数のノードを親ノードの子ノードとして登録
+            subPrnts.forEach(function (prntNode) {
+                if (prntNode.children === undefined) {
+                    prntNode.children = Array();
+                }
+                prntNode.children.push(node.sub[node.sub.length - 1])
+            });
+        });
     });
 
     // tree setting
