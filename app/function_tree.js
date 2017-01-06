@@ -85,7 +85,7 @@ function getNodeHeight() {
     return 15;
 }
 function getNodeWidth() {
-    return 200;
+    return 250;
 }
 function getNodeNameWidth() {
     return getNodeWidth() - 20;
@@ -102,7 +102,7 @@ function makeTree(dataset) {
     root = d3.hierarchy(dataset, function (d) {
         return d["children"];
     });
-    
+
     root.eachBefore(function (node) {
         // set node name label string array to fit node width
         node.label = splitStrByWidth(node.data.name, getNodeNameWidth());
@@ -136,41 +136,65 @@ function makeTree(dataset) {
         .separation(nodeSeparate);
 
     function nodeSeparate(a, b) {
-        console.log(a.data.name, b.data.name);
         var sep = 3;  // space between nodes
-
         // ノードの幅広さを求める関数
         // 戻り値: 幅のarray, index 0: 上側の余白, index 1: 下側の余白
         var getWidth = function (node) {
-            // 与えられたノードの幅を求める（子ノードを探索しない)
-            var _oneNodeWidth = function (node) {
+            // nodeとsub-nodeのラベル幅を求める(子ノードは考慮しない)
+            var _nodeWidth = function (node) {
                 var width = 0;
                 width += node.label.length;
-                node.data.sub.forEach(function (sub) {
-                    width += Math.ceil(getStrWidth(sub.name) / getSubNodeNameWidth());
+                node.sub.forEach(function (sub) {
+                    width += sub.label.length;
                 })
                 return width;
             }
             var childrenWidth = node.children == undefined ? 0
                 : node.children
                     .reduce(function (_a, _b) {
-                        return _a + _oneNodeWidth(_b) + sep;
+                        return _a + _nodeWidth(_b) + sep;
                     }, 0);
-            var width = _oneNodeWidth(node);
+            var thisWidth = _nodeWidth(node);
             var _result = Array();  //index 0: 上側の余白, index 1: 下側の余白
             _result[0] = childrenWidth / 2;
-            _result[1] = width > childrenWidth / 2 ? width : childrenWidth / 2;
+            _result[1] = thisWidth > childrenWidth / 2 ? thisWidth : childrenWidth / 2;
             return _result;
         };
-
+        // 共通の親ノードまで遡ってノード幅広さを拡張する
+        var widenForward = function (node, root, width = undefined) {
+            var _width;
+            if (width === undefined) {
+                _width = getWidth(node);
+            } else {
+                _width = width;
+            }
+            if (node.parent == root || node == root) {
+                return { "node": node, "width": _width };
+            } else {
+                // 同じ親に属するノードのうち、引数ノードより上側のノードの幅を加算
+                for (var i = 0; i < node.parent.children.indexOf(node); i++) {
+                    _width[0] += getWidth(node.parent.children[i])[1]
+                        + getWidth(node.parent.children[i])[1]
+                        + sep;
+                }
+                // 同じ親に属するノードのうち、引数ノードより下側のノードの幅を加算
+                for (var i = node.parent.children.indexOf(node) + 1; i < node.parent.children.length; i++) {
+                    _width[1] += getWidth(node.parent.children[i])[0]
+                        + getWidth(node.parent.children[i])[1]
+                        + sep;
+                }
+                return widenForward(node.parent, root, _width);
+            }
+        };
         if (a.parent == b.parent) {
             var a_i = a.parent.children.indexOf(a);
             var b_i = b.parent.children.indexOf(b);
             var begin = a_i > b_i ? b_i : a_i;
             var end = a_i > b_i ? a_i : b_i;
-            var _result = 0;
-            for (var i = begin; i < end; i++) {
-                _result += getWidth(a.parent.children[i])[1] + sep;
+            var _result = getWidth(a.parent.children[begin])[1] + sep;
+            for (var i = begin + 1; i < end; i++) {
+                _result += getWidth(a.parent.children[i])[0]
+                    + getWidth(a.parent.children[i])[1] + sep;
             }
             _result += getWidth(a.parent.children[end])[0];
             return _result;
@@ -181,10 +205,11 @@ function makeTree(dataset) {
             var jptrIndex = 0;
             do {
                 if (jptrA[jptrIndex] != jptrB[jptrIndex]) {
-                    // aとbが兄弟関係の場合: jptrは数字が異なる
-                    // aとbが親子関係の場合: jptrは"/"の有無で違いが発生
                     if (jptrA[jptrIndex] == "/") {
+                        // aとbが親子関係の場合: jptrは"/"の有無で違いが発生
                     } else {
+                        // aとbが兄弟関係の場合: jptrは数字が異なる
+                        // 共通の親ノードのjson pointerを得る
                         while (jptrA[jptrIndex] != "/") {
                             jptrIndex--;
                         }
@@ -196,35 +221,11 @@ function makeTree(dataset) {
             } while (1)
             // jptrAとjptrBがともに持つ親ノード
             var rootAandB = perseJptr(root, jptrA.substring(0, jptrIndex))
-            // 共通の親ノードまで遡ってノード幅広さを拡張する
-            var widenForward = function (node, root, width = undefined) {
-                var _width;
-                if (width === undefined) {
-                    _width = getWidth(node);
-                } else {
-                    _width = width;
-                }
-                if (node.parent == root || node == root) {
-                    return { "node": node, "width": _width };
-                } else {
-                    // 同じ親に属するノードのうち、引数ノードより上側のノードの幅を加算
-                    for (var i = 0; i < node.parent.children.indexOf(node); i++) {
-                        _width[0] += getWidth(node.parent.children[i])[1]
-                            + getWidth(node.parent.children[i])[1]
-                            + sep;
-                    }
-                    // 同じ親に属するノードのうち、引数ノードより下側のノードの幅を加算
-                    for (var i = node.parent.children.indexOf(node) + 1; i < node.parent.children.length; i++) {
-                        _width[1] += getWidth(node.parent.children[i])[0]
-                            + getWidth(node.parent.children[i])[1]
-                            + sep;
-                    }
-                    return widenForward(node.parent, root, _width);
-                }
-            };
+
             // jptrAとjptrBを共通の親ノードまで遡る
             var widenA = widenForward(a, rootAandB);
             var widenB = widenForward(b, rootAandB);
+            // aとbが親子関係の場合
             if (widenA.node == rootAandB || widenB.node == rootAandB) {
                 return sep * 2;
             }
