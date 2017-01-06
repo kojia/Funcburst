@@ -551,8 +551,13 @@ function clickNode(data) {
             var ctrl = evt.target;
             if (Sortable.utils.is(ctrl, ".js-remove")) {  // Click on remove button
                 item.parentNode.removeChild(item); // remove sortable item
-                // 子要素の削除
+                // 子Nodeの削除
                 data.data.children.splice(evt.oldIndex - 1, 1);
+                // 子Node削除によりjson pointerが繰り上がる
+                var _jptr = data == root ? "" : getJptr(data);
+                _jptr += "/children/" + String(evt.oldIndex - 1);
+                console.log(_jptr);
+                delJptr(data, _jptr)
                 makeTree(dataset);
             }
         },
@@ -885,26 +890,28 @@ function getJptr(node, ptr = "") {
     }
 }
 
-// delete json pointerF
+// delete json pointer
 function delJptr(node, jptr) {
-    var jptrRight = jptr.match(/\d+$/)[0];
-    var jptrLeft = jptr.slice(0, -jptrRight.length);
+    var argIndex = jptr.match(/\d+$/)[0];  // indexを切り出し
+    var jptrLeft = jptr.slice(0, -argIndex.length);
     var re = RegExp("^" + jptrLeft)
     node.descendants().forEach(function (d) {
         d.data.sub.forEach(function (sub) {
             sub.parents.forEach(function (p, i, arr) {
-                var splited = p.split(re);
-                if (splited.length < 2) { return; }
-                if (splited[1] == jptrRight) {
+                if (!re.test(p)) { return; }
+                // 引数のjptrと、data中のjptrのindexを比較
+                var _right = p.split(re)[1];
+                var jptrIndex = _right.match(/^\d+/)[0];  // each要素のindex
+                var jptrRight = _right.split(/^\d+/)[1];  // each要素のindex以降のjptr文字列
+                if (jptrIndex == argIndex) {
                     arr.splice(i, 1);
                 }
-                // 削除したsubより後の要素を繰り上げ
-                else if (/\d+/.test(splited[1])) {
-                    if (Number(splited[1]) > Number(jptrRight)) {
-                        var newNum = Number(splited[1]) - 1;
-                        sub.parents[i] = jptrLeft + String(newNum);
-                    }
+                // 削除したindexより後の要素を繰り上げ
+                if (Number(jptrIndex) > Number(argIndex)) {
+                    var newNum = Number(jptrIndex) - 1;
+                    sub.parents[i] = jptrLeft + String(newNum) + jptrRight;
                 }
+
             })
         })
     });
