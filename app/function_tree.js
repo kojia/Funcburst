@@ -227,6 +227,15 @@ function makeTree(dataset) {
             var widenB = widenForward(b, rootAandB);
             // aとbが親子関係の場合
             if (widenA.node == rootAandB || widenB.node == rootAandB) {
+                var _prnt;
+                var _child;
+                if (widenA.node == rootAandB) {
+                    _prnt = widenA;
+                    _child = widenB;
+                } else {
+                    _prnt = widenB;
+                    _child = widenA;
+                }
                 return sep * 2;
             }
             // jptrAとjptrBの距離を求める
