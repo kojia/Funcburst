@@ -478,6 +478,7 @@ function clickNode(data) {
     addChildBtn.on("click", function () {
         $("#modal-node-add-child").modal("open");
         $("#modal-node-add-child form")[0].reset();
+        $("#input-node-add-child").focus();
         d3.select("#modal-node-add-child a")
             .on("click", function () {
                 var _nodeName = $("#input-node-add-child").val();
