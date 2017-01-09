@@ -137,34 +137,23 @@ function makeTree(dataset) {
 
     function nodeSeparate(a, b) {
         var sep = 3;  // space between nodes
-        // ノードの幅広さを求める関数
-        // 戻り値: 幅のarray, index 0: 上側の余白, index 1: 下側の余白
+
+        // nodeとsub-nodeのラベル幅を求める(子ノードは考慮しない)
         var getWidth = function (node) {
-            // nodeとsub-nodeのラベル幅を求める(子ノードは考慮しない)
-            var _nodeWidth = function (node) {
-                var width = 0;
-                width += node.label.length;
-                node.sub.forEach(function (sub) {
-                    width += sub.label.length;
-                })
-                return width;
-            }
-            var childrenWidth = node.children == undefined ? 0
-                : node.children
-                    .reduce(function (_a, _b) {
-                        return _a + _nodeWidth(_b) + sep;
-                    }, 0);
-            var thisWidth = _nodeWidth(node);
-            var _result = Array();  //index 0: 上側の余白, index 1: 下側の余白
-            _result[0] = childrenWidth / 2;
-            _result[1] = thisWidth > childrenWidth / 2 ? thisWidth : childrenWidth / 2;
-            return _result;
-        };
+            var width = 0;
+            width += node.label.length;
+            node.sub.forEach(function (sub) {
+                width += sub.label.length;
+            })
+            return width;
+        }
+
         // 共通の親ノードまで遡ってノード幅広さを拡張する
+        // return { "node": node, "width": _width }
         var widenForward = function (node, root, width = undefined) {
             var _width;
             if (width === undefined) {
-                _width = getWidth(node);
+                _width = getWidthOneBack(node);
             } else {
                 _width = width;
             }
@@ -173,30 +162,59 @@ function makeTree(dataset) {
             } else {
                 // 同じ親に属するノードのうち、引数ノードより上側のノードの幅を加算
                 for (var i = 0; i < node.parent.children.indexOf(node); i++) {
-                    _width[0] += getWidth(node.parent.children[i])[1]
-                        + getWidth(node.parent.children[i])[1]
+                    _width[0] += getWidthOneBack(node.parent.children[i])[1]
+                        + getWidthOneBack(node.parent.children[i])[1]
                         + sep;
                 }
                 // 同じ親に属するノードのうち、引数ノードより下側のノードの幅を加算
                 for (var i = node.parent.children.indexOf(node) + 1; i < node.parent.children.length; i++) {
-                    _width[1] += getWidth(node.parent.children[i])[0]
-                        + getWidth(node.parent.children[i])[1]
+                    _width[1] += getWidthOneBack(node.parent.children[i])[0]
+                        + getWidthOneBack(node.parent.children[i])[1]
                         + sep;
                 }
                 return widenForward(node.parent, root, _width);
             }
         };
+        // treeの子nodeを下ってノード幅広さを拡張する
+        // 戻り値: 幅のarray, index 0: 上側の余白, index 1: 下側の余白
+        var widenBackward = function (node, depth = undefined) {
+            var _getChildrenWidth = function (node, depth) {
+                var childrenWidth = 0;
+                if ((depth != undefined || depth >= 0) && node.children != undefined) {
+                    var childrenWidth = node.children
+                        .reduce(function (_a, _b) {
+                            var _child = _getChildrenWidth(_b, depth - 1);
+                            var _this = getWidth(_b);
+                            var _width = _this > _child ? _this : _child;
+                            return _a + _width + sep;
+                        }, 0);
+                }
+                return childrenWidth;
+            }
+            var childrenWidth = _getChildrenWidth(node);
+            var thisWidth = getWidth(node);
+            var _result = Array();  //index 0: 上側の余白, index 1: 下側の余白
+            _result[0] = childrenWidth / 2;
+            _result[1] = thisWidth > childrenWidth / 2 ? thisWidth : childrenWidth / 2;
+            return _result;
+        }
+        // ノードの幅広さを求める関数
+        // 戻り値: 幅のarray, index 0: 上側の余白, index 1: 下側の余白
+        var getWidthOneBack = function (node) {
+            return widenBackward(node, 1);
+        };
+
         if (a.parent == b.parent) {
             var a_i = a.parent.children.indexOf(a);
             var b_i = b.parent.children.indexOf(b);
             var begin = a_i > b_i ? b_i : a_i;
             var end = a_i > b_i ? a_i : b_i;
-            var _result = getWidth(a.parent.children[begin])[1] + sep;
+            var _result = getWidthOneBack(a.parent.children[begin])[1] + sep;
             for (var i = begin + 1; i < end; i++) {
-                _result += getWidth(a.parent.children[i])[0]
-                    + getWidth(a.parent.children[i])[1] + sep;
+                _result += getWidthOneBack(a.parent.children[i])[0]
+                    + getWidthOneBack(a.parent.children[i])[1] + sep;
             }
-            _result += getWidth(a.parent.children[end])[0];
+            _result += getWidthOneBack(a.parent.children[end])[0];
             return _result;
         }
         else {
@@ -250,7 +268,7 @@ function makeTree(dataset) {
                 } else if (i == b_i) {
                     _result += widenB.width[1] + sep;
                 } else {
-                    _result += getWidth(widenA.node.parent.children[i])[1] + sep;
+                    _result += getWidthOneBack(widenA.node.parent.children[i])[1] + sep;
                 }
             }
             console.log(widenA.node[0] + "  res: " + _result);
