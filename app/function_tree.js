@@ -466,23 +466,28 @@ function clickNode(data) {
         .text("remove_circle_outline");
     // insert add-child button
     var addChildBtn = d3.select("#node-edit .collection.children")
-        .append("li").attr("class", "collection-item add")
-        .append("button").attr("class", "waves-effect waves-light btn");
+        .append("li")
+        .attr("class", "collection-item add")
+        .append("button")
+        .attr("class", "waves-effect waves-light btn")
+        .attr("href", "#modal-node-add-child");
     addChildBtn.text("Add")
         .append("i").attr("class", "material-icons left")
         .text("add");
     // behavior when add-child button is clicked 
     addChildBtn.on("click", function () {
-        var newName = window.prompt("Input new child node name.", "");
-        if (newName === null) {
-            return;
-        }
-        var newObj = makeNewNode(newName);
-        if (data.data.children === undefined) {
-            data.data["children"] = [];
-        }
-        data.data.children.push(newObj);
-        makeTree(dataset);
+        $("#modal-node-add-child").modal("open");
+        $("#modal-node-add-child form")[0].reset();
+        d3.select("#modal-node-add-child a")
+            .on("click", function () {
+                var _nodeName = $("#input-node-add-child").val();
+                var newObj = makeNewNode(_nodeName);
+                if (data.data.children === undefined) {
+                    data.data["children"] = [];
+                }
+                data.data.children.push(newObj);
+                makeTree(dataset);
+            });
     })
     // bind sub-nodes
     var sub = d3.select("#node-edit .collection.subnode")

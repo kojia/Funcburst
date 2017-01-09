@@ -78,9 +78,9 @@
 	</li>
 	<li class="collection-item">
 		<form name="nodeName" onsubmit="return false;">
-			<input value="" id="name">
-		</form>
-	</li>
+<input value="" id="name">
+</form>
+</li>
 </ul>
 <ul class="collection with-header parent">
 	<li class="collection-header">
@@ -108,9 +108,9 @@
 	</li>
 	<li class="collection-item">
 		<form name="subnodeName" onsubmit="return false;">
-			<input value="" id="subname" type="text">
-		</form>
-	</li>
+<input value="" id="subname" type="text">
+</form>
+</li>
 </ul>
 <ul class="collection with-header" id="subnode-belonging">
 	<li class="collection-header">
@@ -150,8 +150,24 @@
 <!--文字列幅測定用span-->
 <span id="ruler" style="visibility:hidden;position:absolute;white-space:nowrap;"></span>
 
-<script type="text/javascript" src="app/function_tree.js"></script>
+<!-- Modal Structure -->
+<div id="modal-node-add-child" class="modal">
+	<div class="modal-content">
+		<h4>Input New Child Name</h4>
+		<form>
+			<div class="input-field">
+				<input id="input-node-add-child" type="text">
+				<label for="first_name">New Child Name</label>
+			</div>
+		</form>
+	</div>
+	<div class="modal-footer">
+		<a href="#!" class=" modal-action modal-close waves-effect waves-green btn-flat">Agree</a>
+	</div>
+</div>
 
+
+<script type="text/javascript" src="app/function_tree.js"></script>
 </body>
 
 </html>
