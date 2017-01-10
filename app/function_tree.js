@@ -486,23 +486,17 @@ function clickNode(data) {
     }
     addChildBtn.on("click", function () {
         $("#modal-node-add-child").modal("open");
-        // $("#modal-node-add-child form").submit(function(){
-        //     // _addChild();
-        //     console.log("test");
-        //     $("#modal-node-add-child").modal("close");
-        //     return false;
-        // });
+        // enterキーでsubmitしたときの動作
+        d3.select("#modal-node-add-child form")
+            .on("submit", function () {
+                _addChild();
+                $("#modal-node-add-child").modal("close");
+                return false;
+            });
         $("#modal-node-add-child form")[0].reset();  // inputテキストボックスを空にする
         $("#input-node-add-child").focus();  // テキストボックスにフォーカス
-        d3.select("#modal-node-add-child a")
+        d3.select("#modal-node-add-child a")  // AGREEクリック時の動作
             .on("click", _addChild);
-        // $("#input-node-add-child").keypress(function (e) {
-        //     if (e.which == 13) {
-        //         _addChild();
-        //         $("#modal-node-add-child").modal("close");
-        //         return false;
-        //     }
-        // })
     })
     // bind sub-nodes
     var sub = d3.select("#node-edit .collection.subnode")
