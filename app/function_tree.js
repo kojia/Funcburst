@@ -486,7 +486,7 @@ function clickNode(data) {
     }
     addChildBtn.on("click", function () {
         $("#modal-node-add-child").modal("open");
-        // enterキーでsubmitしたときの動作
+        // add child when enter key pressed
         d3.select("#modal-node-add-child form")
             .on("submit", function () {
                 _addChild();
@@ -495,7 +495,7 @@ function clickNode(data) {
             });
         $("#modal-node-add-child form")[0].reset();  // inputテキストボックスを空にする
         $("#input-node-add-child").focus();  // テキストボックスにフォーカス
-        d3.select("#modal-node-add-child a")  // AGREEクリック時の動作
+        d3.select("#modal-node-add-child a")  // behavior when AGREE button clicked
             .on("click", _addChild);
     })
     // bind sub-nodes
@@ -521,16 +521,30 @@ function clickNode(data) {
         .append("i").attr("class", "material-icons left")
         .text("add");
     // behavior when add-sub-node button is clicked 
-    addSubBtn.on("click", function () {
-        var newName = window.prompt("Input new sub node name.", "");
-        if (newName === null) { return; }
-        var newObj = makeNewSubNode(newName);
+    var _addSubNode = function () {
+        var _name = $("#input-node-add-subnode").val();
+        var newObj = makeNewSubNode(_name);
         if (data.data.sub === undefined) {
             data.data["sub"] = [];
         }
         data.data.sub.push(newObj);
         makeTree(dataset);
-    })
+    }
+    addSubBtn.on("click", function () {
+        $("#modal-node-add-subnode").modal("open");
+        // add subnode when enter key pressed
+        d3.select("#modal-node-add-subnode form")
+            .on("submit", function () {
+                _addSubNode();
+                $("#modal-node-add-subnode").modal("close");
+                return false;
+            });
+        $("#modal-node-add-subnode form")[0].reset();  // inputテキストボックスを空にする
+        $("#input-node-add-subnode").focus();  // テキストボックスにフォーカス
+        d3.select("#modal-node-add-subnode a")  // behavior when AGREE button clicked
+            .on("click", _addSubNode);
+    });
+
     // Sortable List Option
     if ("nodeChildrenSort" in window) { nodeChildrenSort.destroy(); }
     var el = document.getElementById("node-children");
