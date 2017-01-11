@@ -678,7 +678,7 @@ function drawSubNode(subNode) {
         .attr("r", 3)
         .attr("fill", "green");
     subNode.append("text")
-        .attr("font-size", getNodeHeight() + "px")
+        .attr("font-size", getNodeHeight() * 0.9 + "px")
         .attr("fill", "gray")
         .attr("dominant-baseline", "middle");
     subNode.select("text")
