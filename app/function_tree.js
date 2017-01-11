@@ -136,7 +136,7 @@ function makeTree(dataset) {
         .separation(nodeSeparate);
 
     function nodeSeparate(a, b) {
-        var sep = 3;  // space between nodes
+        var sep = 2;  // space between nodes
 
         // nodeとsub-nodeのラベル幅を求める(子ノードは考慮しない)
         var getWidth = function (node) {
@@ -254,7 +254,23 @@ function makeTree(dataset) {
                     _prnt = widenB;
                     _child = widenA;
                 }
-                return sep * 2;
+                var _wholeWidth = 0;  // 子全体の幅
+                var _targetWidth = 0;  // _childまでの幅
+                var _index = _prnt.node.children.indexOf(_child.node);
+                _prnt.node.children.forEach(function (ch, i, arr) {
+                    var _childWidth = widenBackward(ch);
+                    if (i == arr.length) {
+                        _wholeWidth += _childWidth[0];
+                    } else {
+                        _wholeWidth += _childWidth[0] + _childWidth[1] + sep;
+                    }
+                    if (_index < i) {
+                        _targetWidth += _childWidth[0] + _childWidth[1] + sep;
+                    } else if (_index == i) {
+                        _targetWidth += _childWidth[0];
+                    }
+                });
+                return Math.abs(_wholeWidth / 2 - _targetWidth);
             }
             // jptrAとjptrBの距離を求める
             var a_i = widenA.node.parent.children.indexOf(widenA.node);
@@ -280,22 +296,7 @@ function makeTree(dataset) {
     tree(root);
 
     // sub nodeの計算
-    // 幅方向単位長の計算
-    var left = root;
-    var right = root;
-    var sep = 0;
-    root.eachBefore(function (node) {
-        if (node.x < left.x) {
-            sep += tree.separation()(node, left);
-            left = node;
-        }
-        if (node.x > right.x) {
-            sep += tree.separation()(node, right);
-            right = node;
-        }
-    });
-    var treeWidth = (right.x - left.x) ? (right.x - left.x) : 1;
-    var kx = treeWidth / sep; // 単位長
+    var kx = getNodeHeight(); // 単位長
     // tree-nodesにsub nodesの情報を流し込む
     root.each(function (node) {
         node.sub = Array();  // create array for sub-node
@@ -341,7 +342,18 @@ function makeTree(dataset) {
             })
             .reduce(function (a, b) { return a.concat(b); }, Array());
     }
-
+    // tree全体の大きさを取得
+    var left = root;
+    var right = root;
+    root.eachBefore(function (node) {
+        if (node.x < left.x) {
+            left = node;
+        }
+        if (node.x > right.x) {
+            right = node;
+        }
+    });
+    var treeWidth = (right.x - left.x) ? (right.x - left.x) : 1;
     // treeを入れるコンテナを作成
     var zoom = d3.zoom()
         .scaleExtent([.2, 10])
