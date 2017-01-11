@@ -295,34 +295,16 @@ function makeTree(dataset) {
     // create tree layout
     tree(root);
 
-    // sub nodeの計算
+    // sub nodeの表示位置計算
     var kx = getNodeHeight(); // 単位長
-    // tree-nodesにsub nodesの情報を流し込む
     root.each(function (node) {
-        node.sub = Array();  // create array for sub-node
-        var lines = node.label.length;  // x座標オフセット量
-        node.data.sub.forEach(function (subElm, i) {
-            // parent のjsonpointerから対応するノードを得る
-            var subPrnts = subElm.parents.map(function (p) {
-                return perseJptr(root, p);
-            });
-            node.sub.push({
-                "x": node.x + kx * lines,
-                "y": node.y + kx / 2,
-                "data": subElm,
-                "parents": subPrnts,
-                "belonging": node,  // subnodeが所属しているnode
-                "label": splitStrByWidth(subElm.name, getSubNodeNameWidth())
-            });
-            // sub-nodeのlinesを追加する
-            lines += splitStrByWidth(subElm.name, getSubNodeNameWidth()).length;
-            // 引数のノードを親ノードの子ノードとして登録
-            subPrnts.forEach(function (prntNode) {
-                if (prntNode.children === undefined) {
-                    prntNode.children = Array();
-                }
-                prntNode.children.push(node.sub[node.sub.length - 1])
-            });
+        var lineOffset = node.label.length;  // x座標オフセット量
+        node.sub.forEach(function (subElm, i, subArr) {
+            subArr[i].x = node.x + kx * lineOffset;
+            subArr[i].y = node.y + kx / 2;
+            // オフセット量加算
+            lineOffset += subElm.label.length;
+
         });
     });
     // sub node のarrayを返す関数
