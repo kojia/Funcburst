@@ -786,7 +786,7 @@ function clickSubNode(data) {
         // click時の挙動
         margedPrnt.on("click", function (prnt) {
             var _ptr = getJptr(prnt.belonging,
-                "sub/" + prnt.belonging.sub.indexOf(prnt));
+                "/sub/" + prnt.belonging.sub.indexOf(prnt));
             data.data.parents.push(_ptr);
             // データ再構築
             $("#side-subnode-parent").sideNav("hide");
