@@ -528,11 +528,7 @@ function clickNode(data) {
         data.data.children.push(newObj);
         var _jptr = getJptr(data);
         makeTree(dataset);
-        if (_jptr == "/") {
-            clickNode(root);
-        } else {
-            clickNode(perseJptr(root, _jptr));
-        }
+        clickNode(perseJptr(root, _jptr));
     }
     addChildBtn.on("click", function () {
         $("#modal-node-add-child").modal("open");
