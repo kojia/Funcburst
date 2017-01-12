@@ -937,11 +937,11 @@ function makeNewSubNode(name) {
 // get json-pointer of the node
 function getJptr(node, ptr = "") {
     if (node.parent === null) {
-        return "/" + ptr;
+        return ptr;
     } else {
         var _ref = node.parent.children.indexOf(node);
-        var _ptr = ptr === "" ? "" : "/" + ptr;
-        return getJptr(node.parent, "children/" + _ref + _ptr);
+        var _ptr = ptr === "" ? "" : ptr;
+        return getJptr(node.parent, "/children/" + _ref + _ptr);
     }
 }
 
