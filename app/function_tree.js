@@ -363,14 +363,6 @@ function makeTree(dataset) {
         .translate(10, ty)
         .scale(k));
 
-    // ノード作成
-    var node = d3.select(".treeContainer")
-        .selectAll(".node")
-        .data(root.descendants())
-        .enter()
-        .append("g");
-    drawNode(node)
-
     // ノード間を線でつなぐ
     d3.select(".treeContainer").selectAll(".link")
         .data(root.descendants().slice(1))
@@ -388,19 +380,16 @@ function makeTree(dataset) {
                 + " " + d.parent.y + "," + d.parent.x;
         });
 
+    // ノード作成
+    var node = d3.select(".treeContainer")
+        .selectAll(".node")
+        .data(root.descendants())
+        .enter()
+        .append("g");
+    drawNode(node)
 
     // sub nodeをSVG描画
-    var subNode = d3.select('.treeContainer')
-        .selectAll(".subNode")
-        .data(root.subDescendants())
-        .enter()
-        .append("g")
-        .attr("class", "subNode")
-        .attr("transform", function (d) {
-            return "translate(" + d.y + "," + d.x + ")";
-        });
-
-    //subノードをつなぐ線の色を設定
+    // subノードをつなぐ線の色を設定
     var xArray = root.subDescendants()
         .filter(function (node) {
             return node.belonging.height != 0;
@@ -430,6 +419,16 @@ function makeTree(dataset) {
                 + " " + d.parent.y + "," + d.parent.x;
         });
 
+    // sub nodeをsvgに追加
+    var subNode = d3.select('.treeContainer')
+        .selectAll(".subNode")
+        .data(root.subDescendants())
+        .enter()
+        .append("g")
+        .attr("class", "subNode")
+        .attr("transform", function (d) {
+            return "translate(" + d.y + "," + d.x + ")";
+        });
     // sub-nodeのcircleとtextを描画
     drawSubNode(subNode);
 };
