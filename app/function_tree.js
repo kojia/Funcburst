@@ -528,7 +528,7 @@ function clickNode(data) {
         data.data.children.push(newObj);
         var _jptr = getJptr(data);
         makeTree(dataset);
-        if (_jptr = "/") {
+        if (_jptr == "/") {
             clickNode(root);
         } else {
             clickNode(perseJptr(root, _jptr));
