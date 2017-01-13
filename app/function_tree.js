@@ -388,7 +388,6 @@ function makeTree(dataset) {
                 + " " + d.parent.y + "," + d.parent.x;
         });
 
-
     // sub nodeをSVG描画
     var subNode = d3.select('.treeContainer')
         .selectAll(".subNode")
@@ -519,7 +518,7 @@ function clickNode(data) {
         .append("i").attr("class", "material-icons left")
         .text("add");
     // behavior when add-child button is clicked 
-    var _addChild = function () {
+    var addChild = function () {
         var _nodeName = $("#input-node-add-child").val();
         var newObj = makeNewNode(_nodeName);
         if (data.data.children === undefined) {
@@ -535,14 +534,14 @@ function clickNode(data) {
         // add child when enter key pressed
         d3.select("#modal-node-add-child form")
             .on("submit", function () {
-                _addChild();
+                addChild();
                 $("#modal-node-add-child").modal("close");
                 return false;
             });
         $("#modal-node-add-child form")[0].reset();  // inputテキストボックスを空にする
         $("#input-node-add-child").focus();  // テキストボックスにフォーカス
         d3.select("#modal-node-add-child a")  // behavior when AGREE button clicked
-            .on("click", _addChild);
+            .on("click", addChild);
     })
     // bind sub-nodes
     var sub = d3.select("#node-edit .collection.subnode")
@@ -567,28 +566,30 @@ function clickNode(data) {
         .append("i").attr("class", "material-icons left")
         .text("add");
     // behavior when add-sub-node button is clicked 
-    var _addSubNode = function () {
+    var addSubNode = function () {
         var _name = $("#input-node-add-subnode").val();
         var newObj = makeNewSubNode(_name);
         if (data.data.sub === undefined) {
             data.data["sub"] = [];
         }
         data.data.sub.push(newObj);
+        var _jptr = getJptr(data);
         makeTree(dataset);
+        clickNode(perseJptr(root, _jptr));
     }
     addSubBtn.on("click", function () {
         $("#modal-node-add-subnode").modal("open");
         // add subnode when enter key pressed
         d3.select("#modal-node-add-subnode form")
             .on("submit", function () {
-                _addSubNode();
+                addSubNode();
                 $("#modal-node-add-subnode").modal("close");
                 return false;
             });
         $("#modal-node-add-subnode form")[0].reset();  // inputテキストボックスを空にする
         $("#input-node-add-subnode").focus();  // テキストボックスにフォーカス
         d3.select("#modal-node-add-subnode a")  // behavior when AGREE button clicked
-            .on("click", _addSubNode);
+            .on("click", addSubNode);
     });
 
     // Sortable List Option
