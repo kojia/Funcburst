@@ -404,7 +404,7 @@ function makeTree(dataset) {
         return "hsla(" + h + ",100%,60%,1)";
     };
 
-    // subノードを線でつなぐ
+    // subnodeを線でつなぐ
     d3.select(".treeContainer").selectAll(".subLink")
         .data(root.subParentChild())
         .enter()
@@ -413,10 +413,17 @@ function makeTree(dataset) {
         .attr("fill", "none")
         .attr("stroke", function (d) { return getLinkColor(d.parent.x); })
         .attr("d", function (d) {
-            return "M" + d.child.y + "," + d.child.x
-                + "C" + (d.child.y + d.parent.y) / 1.8 + "," + d.child.x
-                + " " + (d.child.y + d.parent.y) / 1.8 + "," + d.parent.x
-                + " " + d.parent.y + "," + d.parent.x;
+            if (d.child.y == d.parent.y) {  // 同じdepthの場合
+                return "M" + d.child.y + "," + d.child.x
+                    + "C" + (d.child.y - getNodeHeight() * 2) + "," + (d.child.x + d.parent.x) / 2
+                    + " " + (d.child.y + getNodeHeight() * 2) + "," + d.parent.x
+                    + " " + d.parent.y + "," + d.parent.x;
+            } else {
+                return "M" + d.child.y + "," + d.child.x
+                    + "C" + (d.child.y + d.parent.y) / 1.8 + "," + d.child.x
+                    + " " + (d.child.y + d.parent.y) / 1.8 + "," + d.parent.x
+                    + " " + d.parent.y + "," + d.parent.x;
+            }
         });
 
     // sub nodeをsvgに追加
@@ -750,17 +757,21 @@ function clickSubNode(data) {
         .text("add");
     // behavior when add-parent button is clicked 
     addParentBtn.on("click", function () {
-        // 選択されているnodeより上位のノードのsubnodeを探索
-        var ancSubnode = data.belonging.ancestors().slice(1)
+        // 選択されているnodeと、より上位のノードのsubnodeを探索
+        var addiable = data.belonging.ancestors()
             .reduce(function (pre, node) {
+                console.log(node);
                 return pre.concat(node.sub);
             }, Array())
             .filter(function (elm) {
-                return data.parents.indexOf(elm) == -1;
+                if (elm == data || data.parents.indexOf(elm) != -1) {
+                    return false;
+                }
+                return true;
             })
         var prnt = d3.select("#subnode-parent")
             .selectAll("a.collection-item")
-            .data(ancSubnode);
+            .data(addiable);
         prnt.exit().remove();
         var enteredPrnt = prnt.enter()
             .append("a")
