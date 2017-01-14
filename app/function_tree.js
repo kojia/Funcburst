@@ -523,28 +523,30 @@ function clickNode(data) {
         .append("i").attr("class", "material-icons left")
         .text("add");
     // behavior when add-child button is clicked 
-    var _addChild = function () {
+    var addChild = function () {
         var _nodeName = $("#input-node-add-child").val();
         var newObj = makeNewNode(_nodeName);
         if (data.data.children === undefined) {
             data.data["children"] = [];
         }
         data.data.children.push(newObj);
+        var _jptr = getJptr(data);
         makeTree(dataset);
+        clickNode(perseJptr(root, _jptr));
     }
     addChildBtn.on("click", function () {
         $("#modal-node-add-child").modal("open");
         // add child when enter key pressed
         d3.select("#modal-node-add-child form")
             .on("submit", function () {
-                _addChild();
+                addChild();
                 $("#modal-node-add-child").modal("close");
                 return false;
             });
         $("#modal-node-add-child form")[0].reset();  // inputテキストボックスを空にする
         $("#input-node-add-child").focus();  // テキストボックスにフォーカス
         d3.select("#modal-node-add-child a")  // behavior when AGREE button clicked
-            .on("click", _addChild);
+            .on("click", addChild);
     })
     // bind sub-nodes
     var sub = d3.select("#node-edit .collection.subnode")
@@ -569,28 +571,30 @@ function clickNode(data) {
         .append("i").attr("class", "material-icons left")
         .text("add");
     // behavior when add-sub-node button is clicked 
-    var _addSubNode = function () {
+    var addSubNode = function () {
         var _name = $("#input-node-add-subnode").val();
         var newObj = makeNewSubNode(_name);
         if (data.data.sub === undefined) {
             data.data["sub"] = [];
         }
         data.data.sub.push(newObj);
+        var _jptr = getJptr(data);
         makeTree(dataset);
+        clickNode(perseJptr(root, _jptr));
     }
     addSubBtn.on("click", function () {
         $("#modal-node-add-subnode").modal("open");
         // add subnode when enter key pressed
         d3.select("#modal-node-add-subnode form")
             .on("submit", function () {
-                _addSubNode();
+                addSubNode();
                 $("#modal-node-add-subnode").modal("close");
                 return false;
             });
         $("#modal-node-add-subnode form")[0].reset();  // inputテキストボックスを空にする
         $("#input-node-add-subnode").focus();  // テキストボックスにフォーカス
         d3.select("#modal-node-add-subnode a")  // behavior when AGREE button clicked
-            .on("click", _addSubNode);
+            .on("click", addSubNode);
     });
 
     // Sortable List Option
@@ -641,8 +645,9 @@ function clickNode(data) {
             data.data.children[_new - 1] = _t;
             replaceSubParent(data.children[_new - 1], _jptr_new, _jptr_old);
             // データ再構築
-            clearEditer();
+            var _jptr = getJptr(data);
             makeTree(dataset);
+            clickNode(perseJptr(root, _jptr));
         }
     });
     // Sub Node のSortable設定
@@ -680,8 +685,9 @@ function clickNode(data) {
             // swap
             swapJptr(data, _jptr_old, _jptr_new);
             // データ再構築
-            clearEditer();
+            var _jptr = getJptr(data);
             makeTree(dataset);
+            clickNode(perseJptr(root, _jptr));
         }
     });
 }
@@ -792,11 +798,14 @@ function clickSubNode(data) {
         // click時の挙動
         margedPrnt.on("click", function (prnt) {
             var _ptr = getJptr(prnt.belonging,
-                "sub/" + prnt.belonging.sub.indexOf(prnt));
+                "/sub/" + prnt.belonging.sub.indexOf(prnt));
             data.data.parents.push(_ptr);
             // データ再構築
             $("#side-subnode-parent").sideNav("hide");
+            var _jptr = getJptr(data.belonging,
+                "/sub/" + data.belonging.sub.indexOf(data));
             makeTree(dataset);
+            clickSubNode(perseJptr(root, _jptr));
         });
         $("#side-subnode-parent").sideNav("show");
     });
@@ -939,11 +948,11 @@ function makeNewSubNode(name) {
 // get json-pointer of the node
 function getJptr(node, ptr = "") {
     if (node.parent === null) {
-        return "/" + ptr;
+        return ptr;
     } else {
         var _ref = node.parent.children.indexOf(node);
-        var _ptr = ptr === "" ? "" : "/" + ptr;
-        return getJptr(node.parent, "children/" + _ref + _ptr);
+        var _ptr = ptr === "" ? "" : ptr;
+        return getJptr(node.parent, "/children/" + _ref + _ptr);
     }
 }
 
