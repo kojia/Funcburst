@@ -1008,8 +1008,8 @@ function swapJptr(node, oldJptr, newJptr) {
             return replaced;
         }
         else {
-            replaced = ptr.replace(newRe, oldJptr);
-            if (replaced != ptr) {
+            replaced = str.replace(newRe, oldJptr);
+            if (replaced != str) {
                 return replaced;
             } else {
                 return false;
