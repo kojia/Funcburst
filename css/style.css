@@ -88,35 +88,35 @@ ul.collection.with-header li.collection-item.add button {
 	width: 100%;
 }
 
-#node-edit, #subnode-edit {
+#node-edit, #func-edit {
 	color: black;
 	line-height: 1.5rem;
 }
 #node-edit h6 {
 	color: lightseagreen;
 }
-#node-edit input, #subnode-edit input {
+#node-edit input, #func-edit input {
 	margin-bottom: 0.2rem;
 	height: 1.2rem;
 }
 #node-children .collection-item, 
-#node-subnode .collection-item,
-/*#subnode-belonging .collection-item,*/
-/*#subnode-children .collection-item */
-#subnode-parents .collection-item{
+#node-func .collection-item,
+/*#func-isb .collection-item,*/
+/*#func-children .collection-item */
+#func-parents .collection-item{
 	margin-top: 0;
 	display: table;
 }
-#subnode-parent li{
+#func-parent li{
 	padding: 0.5rem;
 }
 
-#subnode-parent .sub-prnt-name,
-#subnode-parent .sub-belonging-name {
+#func-parent .func-prnt-name,
+#func-parent .func-isb-name {
 	line-height: 1.3;
 }
 
-#subnode-parent .sub-belonging-name {
+#func-parent .func-isb-name {
 	color: gray;
 	text-align: right;
 }

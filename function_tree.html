@@ -74,7 +74,7 @@
 	<div id="node-edit" class="card-panel teal lighten-2" style="display:none">
 <ul class="collection with-header">
 	<li class="collection-header">
-		<h6>Name</h6>
+		<h6>Component Name</h6>
 	</li>
 	<li class="collection-item">
 		<form name="nodeName" onsubmit="return false;">
@@ -92,37 +92,37 @@
 		<h6>Children</h6>
 	</li>
 </ul>
-<ul class="collection with-header subnode" id="node-subnode">
+<ul class="collection with-header func" id="node-func">
 	<li class="collection-header">
-		<h6>Sub Nodes</h6>
+		<h6>Function</h6>
 	</li>
 </ul>
 </div>
 </li>
-<!--Sub Node Editer-->
+<!--func-node Editer-->
 <li>
-	<div id="subnode-edit" class="card-panel blue lighten-2" style="display:none">
+	<div id="func-edit" class="card-panel blue lighten-2" style="display:none">
 <ul class="collection with-header">
 	<li class="collection-header">
-		<h6>Name</h6>
+		<h6>Definition of Function</h6>
 	</li>
 	<li class="collection-item">
-		<form name="subnodeName" onsubmit="return false;">
-<input value="" id="subname" type="text">
+		<form name="funcName" onsubmit="return false;">
+<input value="" id="funcName" type="text">
 </form>
 </li>
 </ul>
-<ul class="collection with-header" id="subnode-belonging">
+<ul class="collection with-header" id="func-isb">
 	<li class="collection-header">
-		<h6>Belonging Node</h6>
+		<h6>Component</h6>
 	</li>
 </ul>
-<ul class="collection with-header" id="subnode-parents">
+<ul class="collection with-header" id="func-parents">
 	<li class="collection-header">
 		<h6>Parent</h6>
 	</li>
 </ul>
-<ul class="collection with-header" id="subnode-children">
+<ul class="collection with-header" id="func-children">
 	<li class="collection-header">
 		<h6>Children</h6>
 	</li>
@@ -139,13 +139,13 @@
 	</div>
 </main>
 
-<!--parent select SideNav opened by add button in sub-node edit-->
-<ul id="subnode-parent" class="side-nav collection with-header glass">
+<!--parent select SideNav opened from func-node edit pane-->
+<ul id="func-parent" class="side-nav collection with-header glass">
 	<li class="collection-header">
-		Select Additional Parent Subnode
+		Select Additional Parent Function
 	</li>
 </ul>
-<a href="#" data-activates="subnode-parent" id="side-subnode-parent" class="button-collapse"></a>
+<a href="#" data-activates="func-parent" id="side-func-parent" class="button-collapse"></a>
 
 <!--文字列幅測定用span-->
 <span id="ruler" style="visibility:hidden;position:absolute;white-space:nowrap;"></span>
@@ -164,12 +164,12 @@
 		<a href="#!" class=" modal-action modal-close waves-effect waves-green btn-flat">Agree</a>
 	</div>
 </div>
-<div id="modal-node-add-subnode" class="modal">
+<div id="modal-node-add-func" class="modal">
 	<div class="modal-content">
-		<h4>Input New Sub-Node Name</h4>
+		<h4>Input the definition of Additional Function</h4>
 		<form onsubmit="return false;">
 			<div class="input-field">
-				<input id="input-node-add-subnode" placeholder="New Sub-Node Name" type="text">
+				<input id="input-node-add-func" placeholder="New Sub-Node Name" type="text">
 			</div>
 		</form>
 	</div>

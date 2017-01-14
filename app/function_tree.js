@@ -1,4 +1,4 @@
-var dataset = makeNewNode("Root");
+var dataset = makeNewComp("Root");
 makeTree(dataset);
 
 $(document).ready(function () {
@@ -76,7 +76,7 @@ $("#show-svg").click(function () {
 $("#reload").click(function () {
     d3.select("#node-edit")
         .style("display", "none");
-    d3.select("#subnode-edit")
+    d3.select("#func-edit")
         .style("display", "none");
     makeTree(dataset);
 })
@@ -87,12 +87,16 @@ function getNodeHeight() {
 function getNodeWidth() {
     return 250;
 }
-function getNodeNameWidth() {
+function getCompLabelWidth() {
     return getNodeWidth() - 20;
 }
-function getSubNodeNameWidth() {
+function getFuncLabelWidth() {
     return getNodeWidth() - 20;
 }
+function getParamLabelWidth() {
+    return getNodeWidth() - 30;
+}
+
 
 function makeTree(dataset) {
     // svg initialize
@@ -104,15 +108,24 @@ function makeTree(dataset) {
     });
 
     root.eachBefore(function (node) {
-        // set node name label string array to fit node width
-        node.label = splitStrByWidth(node.data.name, getNodeNameWidth());
-        // set sub-node data
-        node.sub = Array();  // create array for sub-node
-        node.data.sub.forEach(function (subElm, i) {
-            node.sub.push({
-                "data": subElm,
-                "belonging": node,  // subnodeが所属しているnode
-                "label": splitStrByWidth(subElm.name, getSubNodeNameWidth())
+        // set component-node name label string array to fit node width
+        node.label = splitStrByWidth(node.data.name, getCompLabelWidth());
+        // set function-node data
+        node.func = Array();  // create array for func-node
+        node.data.func.forEach(function (funcElm, i) {
+            node.func.push({
+                "data": funcElm,
+                "isb": node,  // func-node is solved by solution "component-node"
+                "label": splitStrByWidth(funcElm.name, getFuncLabelWidth())
+            });
+        });
+        // set parameter-node data
+        node.param = Array();  // create array for param-node
+        node.data.param.forEach(function (paramElm, i) {
+            node.param.push({
+                "data": paramElm,
+                "icb": node,  // param-node is constrained by solution "component-node"
+                "label": splitStrByWidth(paramElm.name, getParamLabelWidth())
             });
         });
     });
@@ -126,12 +139,15 @@ function makeTree(dataset) {
     function nodeSeparate(a, b) {
         var sep = 2;  // space between nodes
 
-        // nodeとsub-nodeのラベル幅を求める(子ノードは考慮しない)
+        // comp-, func-, parm-nodeのラベル幅を求める(子ノードは考慮しない)
         var getWidth = function (node) {
             var width = 0;
             width += node.label.length;
-            node.sub.forEach(function (sub) {
-                width += sub.label.length;
+            node.func.forEach(function (f) {
+                width += f.label.length;
+            })
+            node.param.forEach(function (p) {
+                width += p.label.length;
             })
             return width;
         }
@@ -275,7 +291,6 @@ function makeTree(dataset) {
                     _result += getWidthOneBack(widenA.node.parent.children[i])[1] + sep;
                 }
             }
-            console.log(widenA.node[0] + "  res: " + _result);
             return _result;
         }
     };
@@ -283,37 +298,67 @@ function makeTree(dataset) {
     // create tree layout
     tree(root);
 
-    // sub-nodeの親子関係リンク挿入とsub-nodeの表示位置計算
-    var kx = getNodeHeight(); // 単位長
+    // labelの並列方向単位長
+    var kx = getNodeHeight();
+    // func-, param-nodeの親子関係リンク挿入とfunc-, param-nodeの表示位置計算
     root.each(function (node) {
         var lineOffset = node.label.length;  // x座標オフセット量
-        node.sub.forEach(function (subElm, i, subArr) {
-            subArr[i].x = node.x + kx * lineOffset;
-            subArr[i].y = node.y + kx / 2;
+        node.func.forEach(function (funcElm, i, funcArr) {
+            funcArr[i].x = node.x + kx * lineOffset;
+            funcArr[i].y = node.y + kx / 2;
             // オフセット量加算
-            lineOffset += subElm.label.length;
-            // set parent sub-node of each sub-node
-            subArr[i].parents = subElm.data.parents.map(function (p) {
+            lineOffset += funcElm.label.length;
+            // set parent func-node of each func-node
+            funcArr[i].parents = funcElm.data.parents.map(function (p) {
                 return perseJptr(root, p);
             });
-            // add children of each sub-node
-            subElm.parents.forEach(function (subPrnt) {
-                if (subPrnt.children === undefined) {
-                    subPrnt.children = Array();
+            // add children of each func-node
+            funcElm.parents.forEach(function (funcPrnt) {
+                if (funcPrnt.children === undefined) {
+                    funcPrnt.children = Array();
                 }
-                subPrnt.children.push(subElm);
+                funcPrnt.children.push(funcElm);
             })
         });
+        node.param.forEach(function (paramElm, i, paramArr) {
+            paramArr[i].x = node.x + kx * lineOffset;
+            paramArr[i].y = node.y + kx;
+            // オフセット量加算
+            lineOffset += paramElm.label.length;
+            // set parent param-node of each param-node
+            paramArr[i].parents = paramElm.data.parents.map(function (p) {
+                return perseJptr(root, p);
+            });
+            // parameter doesn't have children
+            // (prameter doesn't have parameter)
+        });
     });
-    // sub node のarrayを返す関数
-    root.subDescendants = function () {
+
+    // func node のarrayを返す関数
+    root.funcDescendants = function () {
         return this.descendants()
-            .map(function (elm) { return elm.sub; })
-            .reduce(function (a, b) { return a.concat(b); }, Array());
+            .reduce(function (a, b) { return a.concat(b.func); }, Array());
     };
-    // sub node の親子ペアのリストを返す
-    root.subParentChild = function () {
-        return this.subDescendants()
+    // func node の親子ペアのリストを返す
+    root.funcParentChild = function () {
+        return this.funcDescendants()
+            .filter(function (elm) { return elm.parents.length; })
+            .map(function (elm) {
+                return elm.parents.map(function (prnt) {
+                    return { "child": elm, "parent": prnt }
+                })
+            })
+            .reduce(function (a, b) { return a.concat(b); }, Array());
+    }
+
+    // param-node のarrayを返す関数
+    root.paramDescendants = function () {
+        return this.descendants()
+            .reduce(function (a, b) { return a.concat(b.param); }, Array());
+    };
+    // param-node を子に持つペアのリストを返す
+    root.paramParentChild = function () {
+        return this.paramDescendants()
             .filter(function (elm) { return elm.parents.length; })
             .map(function (elm) {
                 return elm.parents.map(function (prnt) {
@@ -386,30 +431,28 @@ function makeTree(dataset) {
         .append("g");
     drawNode(node)
 
-    // sub nodeをSVG描画
-    // subノードをつなぐ線の色を設定
-    var xArray = root.subDescendants()
-        .filter(function (node) {
-            return node.belonging.height != 0;
-        })
+    // func-nodeをSVG描画
+    // func-nodeをつなぐ線の色を設定
+    var xArray = root.funcDescendants()
         .map(function (node) {
             return node.x;
         })
     var xMin = Math.min.apply(null, xArray);
     var xMax = Math.max.apply(null, xArray);
     var getLinkColor = function (x) {
-        var h = 360 * (x - xMin) / (xMax - xMin);
+        console.log(x);
+        var h = 350 * (x - xMin) / (xMax - xMin);
         return "hsla(" + h + ",100%,60%,1)";
     };
 
-    // subnodeを線でつなぐ
-    d3.select(".treeContainer").selectAll(".subLink")
-        .data(root.subParentChild())
+    // func-nodeを線でつなぐ
+    d3.select(".treeContainer").selectAll(".funcLink")
+        .data(root.funcParentChild())
         .enter()
         .append("path")
-        .attr("class", "subLink")
+        .attr("class", "funcLink")
         .attr("fill", "none")
-        .attr("stroke", function (d) { return getLinkColor(d.parent.x); })
+        .attr("stroke", function (d) { return getLinkColor(d.child.x); })
         .attr("d", function (d) {
             if (d.child.y == d.parent.y) {  // 同じdepthの場合
                 return "M" + d.child.y + "," + d.child.x
@@ -424,18 +467,53 @@ function makeTree(dataset) {
             }
         });
 
-    // sub nodeをsvgに追加
-    var subNode = d3.select('.treeContainer')
-        .selectAll(".subNode")
-        .data(root.subDescendants())
+    // func-nodeをsvgに追加
+    var funcNode = d3.select('.treeContainer')
+        .selectAll(".funcNode")
+        .data(root.funcDescendants())
         .enter()
         .append("g")
-        .attr("class", "subNode")
+        .attr("class", "funcNode")
         .attr("transform", function (d) {
             return "translate(" + d.y + "," + d.x + ")";
         });
-    // sub-nodeのcircleとtextを描画
-    drawSubNode(subNode);
+    // func-nodeのcircleとtextを描画
+    drawFuncNode(funcNode);
+
+    // param-nodeを線でつなぐ
+    d3.select(".treeContainer").selectAll(".paramLink")
+        .data(root.paramParentChild())
+        .enter()
+        .append("path")
+        .attr("class", "paramLink")
+        .attr("fill", "none")
+        .attr("stroke", function (d) { return getLinkColor(d.child.x); })
+        .attr("d", function (d) {
+            if (d.child.y == d.parent.y) {  // 同じdepthの場合
+                return "M" + d.child.y + "," + d.child.x
+                    + "C" + (d.child.y - getNodeHeight() * 2) + "," + (d.child.x + d.parent.x) / 2
+                    + " " + (d.child.y + getNodeHeight() * 2) + "," + d.parent.x
+                    + " " + d.parent.y + "," + d.parent.x;
+            } else {
+                return "M" + d.child.y + "," + d.child.x
+                    + "C" + (d.child.y + d.parent.y) / 1.8 + "," + d.child.x
+                    + " " + (d.child.y + d.parent.y) / 1.8 + "," + d.parent.x
+                    + " " + d.parent.y + "," + d.parent.x;
+            }
+        });
+
+    // func-nodeをsvgに追加
+    var funcNode = d3.select('.treeContainer')
+        .selectAll(".funcNode")
+        .data(root.funcDescendants())
+        .enter()
+        .append("g")
+        .attr("class", "funcNode")
+        .attr("transform", function (d) {
+            return "translate(" + d.y + "," + d.x + ")";
+        });
+    // func-nodeのcircleとtextを描画
+    drawFuncNode(funcNode);
 };
 
 function drawNode(node) {
@@ -453,7 +531,7 @@ function drawNode(node) {
     //     .remove();
     node.append("text")
         .attr("font-size", getNodeHeight() + "px");
-    node.select("text").html(function (d) { return tspanStringify(d.label, getNodeNameWidth()) });
+    node.select("text").html(function (d) { return tspanStringify(d.label, getCompLabelWidth()) });
     node.on("click", clickNode);
 }
 function tspanStringify(strArr, width) {
@@ -471,7 +549,7 @@ function clickNode(data) {
 
     d3.select("#node-edit")
         .style("display", "block");
-    d3.select("#subnode-edit")
+    d3.select("#func-edit")
         .style("display", "none");
 
     // bind name
@@ -525,7 +603,7 @@ function clickNode(data) {
     // behavior when add-child button is clicked 
     var addChild = function () {
         var _nodeName = $("#input-node-add-child").val();
-        var newObj = makeNewNode(_nodeName);
+        var newObj = makeNewComp(_nodeName);
         if (data.data.children === undefined) {
             data.data["children"] = [];
         }
@@ -548,59 +626,59 @@ function clickNode(data) {
         d3.select("#modal-node-add-child a")  // behavior when AGREE button clicked
             .on("click", addChild);
     })
-    // bind sub-nodes
-    var sub = d3.select("#node-edit .collection.subnode")
+    // bind func-nodes
+    var func = d3.select("#node-edit .collection.func")
         .selectAll("li.collection-item")
-        .data(function () { return data.sub ? data.sub : []; });
-    sub.exit().remove();
-    var enteredSub = sub.enter()
+        .data(function () { return data.func ? data.func : []; });
+    func.exit().remove();
+    var enteredFunc = func.enter()
         .append("li");
-    var updatedSub = enteredSub.merge(sub)
+    var updatedFunc = enteredFunc.merge(func)
         .attr("class", "collection-item drag")
         .text(function (d) { return d.data.name; });
-    // add remove button for Sub Node
-    updatedSub.append("span").attr("class", "suffix")
+    // add remove button for func-Node
+    updatedFunc.append("span").attr("class", "suffix")
         .append("i")
         .attr("class", "js-remove tiny material-icons")
         .text("remove_circle_outline");
-    // insert add-sub-node button
-    var addSubBtn = d3.select("#node-subnode")
+    // insert add-func-node button
+    var addFuncBtn = d3.select("#node-func")
         .append("li").attr("class", "collection-item add")
         .append("button").attr("class", "waves-effect waves-light btn");
-    addSubBtn.text("Add")
+    addFuncBtn.text("Add")
         .append("i").attr("class", "material-icons left")
         .text("add");
-    // behavior when add-sub-node button is clicked 
-    var addSubNode = function () {
-        var _name = $("#input-node-add-subnode").val();
-        var newObj = makeNewSubNode(_name);
-        if (data.data.sub === undefined) {
-            data.data["sub"] = [];
+    // behavior when add-func-node button is clicked 
+    var addFunc = function () {
+        var _name = $("#input-node-add-func").val();
+        var newObj = makeNewFunc(_name);
+        if (data.data.func === undefined) {
+            data.data["func"] = [];
         }
-        data.data.sub.push(newObj);
+        data.data.func.push(newObj);
         var _jptr = getJptr(data);
         makeTree(dataset);
         clickNode(perseJptr(root, _jptr));
     }
-    addSubBtn.on("click", function () {
-        $("#modal-node-add-subnode").modal("open");
-        // add subnode when enter key pressed
-        d3.select("#modal-node-add-subnode form")
+    addFuncBtn.on("click", function () {
+        $("#modal-node-add-func").modal("open");
+        // add func-node when enter key pressed
+        d3.select("#modal-node-add-func form")
             .on("submit", function () {
-                addSubNode();
-                $("#modal-node-add-subnode").modal("close");
+                addFunc();
+                $("#modal-node-add-func").modal("close");
                 return false;
             });
-        $("#modal-node-add-subnode form")[0].reset();  // inputテキストボックスを空にする
-        $("#input-node-add-subnode").focus();  // テキストボックスにフォーカス
-        d3.select("#modal-node-add-subnode a")  // behavior when AGREE button clicked
-            .on("click", addSubNode);
+        $("#modal-node-add-func form")[0].reset();  // inputテキストボックスを空にする
+        $("#input-node-add-func").focus();  // テキストボックスにフォーカス
+        d3.select("#modal-node-add-func a")  // behavior when AGREE button clicked
+            .on("click", addFunc);
     });
 
     // Sortable List Option
-    if ("nodeChildrenSort" in window) { nodeChildrenSort.destroy(); }
+    if ("compChildrenSort" in window) { compChildrenSort.destroy(); }
     var el = document.getElementById("node-children");
-    nodeChildrenSort = Sortable.create(el, {
+    compChildrenSort = Sortable.create(el, {
         draggable: ".collection-item.drag",
         filter: ".js-remove",
         onFilter: function (evt) {
@@ -613,7 +691,6 @@ function clickNode(data) {
                 // 子Node削除によりjson pointerが繰り上がる
                 var _jptr = data == root ? "" : getJptr(data);
                 _jptr += "/children/" + String(evt.oldIndex - 1);
-                console.log(_jptr);
                 delJptr(data, _jptr)
                 makeTree(dataset);
             }
@@ -625,35 +702,24 @@ function clickNode(data) {
             var _jptr = data == root ? "" : getJptr(data);
             var _jptr_old = _jptr + "/children/" + (_old - 1);
             var _jptr_new = _jptr + "/children/" + (_new - 1);
-            // replace json pointer of sub node
-            var replaceSubParent = function (d, oldPtr, newPtr) {
-                var re = RegExp("^" + oldPtr);
-                d.descendants()
-                    .reduce(function (a, b) { return a.concat(b.sub); }, Array())
-                    .forEach(function (sub) {
-                        sub.data.parents.forEach(function (prnt, i, arr) {
-                            arr[i] = prnt.replace(re, newPtr)
-                        })
-                    })
-            };
             // temporary variable of child element of evt.oldIndex
             var _t = data.data.children[_old - 1];
             // old <- new
             data.data.children[_old - 1] = data.data.children[_new - 1];
-            replaceSubParent(data.children[_old - 1], _jptr_old, _jptr_new);
             // new <- old
             data.data.children[_new - 1] = _t;
-            replaceSubParent(data.children[_new - 1], _jptr_new, _jptr_old);
+            // swap json pointer indicating parent of func-, param-node
+            swapJptr(data, _jptr_old, _jptr_new);
             // データ再構築
             var _jptr = getJptr(data);
             makeTree(dataset);
             clickNode(perseJptr(root, _jptr));
         }
     });
-    // Sub Node のSortable設定
-    if ("nodeSubSort" in window) { nodeSubSort.destroy(); }
-    var el_sub = document.getElementById("node-subnode");
-    nodeSubSort = Sortable.create(el_sub, {
+    // func-Node のSortable設定
+    if ("compFuncSort" in window) { compFuncSort.destroy(); }
+    var el_func = document.getElementById("node-func");
+    compFuncSort = Sortable.create(el_func, {
         draggable: ".collection-item.drag",
         filter: ".js-remove",
         onFilter: function (evt) {
@@ -662,11 +728,14 @@ function clickNode(data) {
             if (Sortable.utils.is(ctrl, ".js-remove")) {  // Click on remove button
                 item.parentNode.removeChild(item); // remove sortable item
                 // dataから削除
-                data.data.sub.splice(evt.oldIndex - 1, 1);
-                // 削除したsub nodeを親としているjson pointerを削除
-                var _jptr = getJptr(data) + "/sub/" + String(evt.oldIndex - 1);
+                data.data.func.splice(evt.oldIndex - 1, 1);
+                // 削除したfunc-nodeを親としているjson pointerを削除
+                var _jptr = getJptr(data) + "/func/" + String(evt.oldIndex - 1);
                 delJptr(data, _jptr);
+                // データ再構築
+                var _jptr = getJptr(data);
                 makeTree(dataset);
+                clickNode(perseJptr(root, _jptr));
             }
         },
         // drag後の処理
@@ -674,14 +743,14 @@ function clickNode(data) {
             var _old = evt.oldIndex;
             var _new = evt.newIndex;
             var _jptr = data == root ? "" : getJptr(data);
-            var _jptr_old = _jptr + "/sub/" + (_old - 1);
-            var _jptr_new = _jptr + "/sub/" + (_new - 1);
-            // temporary variable for sub-node element of evt.oldIndex
-            var _t = data.data.sub[_old - 1];
+            var _jptr_old = _jptr + "/func/" + (_old - 1);
+            var _jptr_new = _jptr + "/func/" + (_new - 1);
+            // temporary variable for func-node element of evt.oldIndex
+            var _t = data.data.func[_old - 1];
             // old <- new
-            data.data.sub[_old - 1] = data.data.sub[_new - 1];
+            data.data.func[_old - 1] = data.data.func[_new - 1];
             // new <- old
-            data.data.sub[_new - 1] = _t;
+            data.data.func[_new - 1] = _t;
             // swap
             swapJptr(data, _jptr_old, _jptr_new);
             // データ再構築
@@ -692,53 +761,53 @@ function clickNode(data) {
     });
 }
 
-function drawSubNode(subNode) {
-    // subノードに円とテキストを表示
-    subNode.append("circle")
+function drawFuncNode(funcNode) {
+    // func-nodeに円とテキストを表示
+    funcNode.append("circle")
         .attr("r", 3)
         .attr("fill", "green");
-    subNode.append("text")
+    funcNode.append("text")
         .attr("font-size", getNodeHeight() * 0.9 + "px")
         .attr("fill", "gray")
         .attr("dominant-baseline", "middle");
-    subNode.select("text")
-        .html(function (d) { return tspanStringify(d.label, getSubNodeNameWidth()) });
-    subNode.on("click", clickSubNode);
+    funcNode.select("text")
+        .html(function (d) { return tspanStringify(d.label, getFuncLabelWidth()) });
+    funcNode.on("click", clickFuncNode);
 }
 
-// サブノードクリック時の挙動
-function clickSubNode(data) {
+// func-nodeクリック時の挙動
+function clickFuncNode(data) {
     console.log(data);
 
-    d3.select("#subnode-edit")
+    d3.select("#func-edit")
         .style("display", "block");
     d3.select("#node-edit")
         .style("display", "none");
 
     // bind name
-    document.subnodeName.reset();  // reset form
-    d3.select("#subnode-edit #subname")
+    document.funcName.reset();  // reset form
+    d3.select("#func-edit #funcName")
         .attr("value", data.data.name)
         .on("change", function () {
             data.data.name = d3.event.target.value;
             makeTree(dataset);
         });
 
-    // bind belonging node
-    var belonging = d3.select("#subnode-belonging")
+    // bind comp-node which func is solved by (isb)
+    var isb = d3.select("#func-isb")
         .selectAll("li.collection-item")
-        .data(function () { return data.belonging ? [data.belonging] : []; });
-    belonging.exit().remove();
-    var enteredBelonging = belonging.enter()
+        .data(function () { return data.isb ? [data.isb] : []; });
+    isb.exit().remove();
+    var enteredIsb = isb.enter()
         .append("li");
-    var updatedBelonging = enteredBelonging.merge(belonging)
+    var updatedIsb = enteredIsb.merge(isb)
         .attr("class", "collection-item")
         .text(function (d) { return d.data.name; });
 
     // bind parent
-    d3.select("#subnode-parents .add")
+    d3.select("#func-parents .add")
         .remove();  // 以前に作成したaddボタンを削除
-    var prnt = d3.select("#subnode-parents")
+    var prnt = d3.select("#func-parents")
         .selectAll("li.collection-item")
         .data(function () { return data.parents ? data.parents : []; });
     prnt.exit().remove();  // 減った要素を削除
@@ -747,13 +816,13 @@ function clickSubNode(data) {
     var updatedPrnt = enteredPrnt.merge(prnt)  // 内容更新
         .attr("class", "collection-item drag")
         .text(function (d) { return d === null ? "no parent" : d.data.name; });
-    // add remove button for Sub Node
+    // add remove button to each parent
     updatedPrnt.append("span").attr("class", "suffix")
         .append("i")
         .attr("class", "js-remove tiny material-icons")
         .text("remove_circle_outline");
     // insert add-parent button
-    var addParentBtn = d3.select("#subnode-parents")
+    var addParentBtn = d3.select("#func-parents")
         .append("li").attr("class", "collection-item add")
         .append("button").attr("class", "waves-effect waves-light btn");
     addParentBtn.text("Add")
@@ -761,11 +830,10 @@ function clickSubNode(data) {
         .text("add");
     // behavior when add-parent button is clicked 
     addParentBtn.on("click", function () {
-        // 選択されているnodeと、より上位のノードのsubnodeを探索
-        var addiable = data.belonging.ancestors()
+        // 選択されているfuncとisb関係にあるcomp-nodeのancestorにあるfuncを探索
+        var addiable = data.isb.ancestors()
             .reduce(function (pre, node) {
-                console.log(node);
-                return pre.concat(node.sub);
+                return pre.concat(node.func);
             }, Array())
             .filter(function (elm) {
                 if (elm == data || data.parents.indexOf(elm) != -1) {
@@ -773,7 +841,7 @@ function clickSubNode(data) {
                 }
                 return true;
             })
-        var prnt = d3.select("#subnode-parent")
+        var prnt = d3.select("#func-parent")
             .selectAll("a.collection-item")
             .data(addiable);
         prnt.exit().remove();
@@ -782,37 +850,37 @@ function clickSubNode(data) {
             .attr("href", "#!")
             .attr("class", "collection-item");
         enteredPrnt.append("div")
-            .attr("class", "sub-prnt-name");
+            .attr("class", "func-prnt-name");
         enteredPrnt.append("div")
-            .attr("class", "sub-belonging-name");
+            .attr("class", "func-isb-name");
         var margedPrnt = enteredPrnt.merge(prnt);
-        // show content of anciestral subnode
-        margedPrnt.select(".sub-prnt-name")
+        // show addiable func-node
+        margedPrnt.select(".func-prnt-name")
             .text(function (d) {
                 return d.data.name;
             })
-        margedPrnt.select(".sub-belonging-name")
+        margedPrnt.select(".func-isb-name")
             .text(function (d) {
-                return d.belonging.data.name;
+                return d.isb.data.name;
             });
         // click時の挙動
         margedPrnt.on("click", function (prnt) {
-            var _ptr = getJptr(prnt.belonging,
-                "/sub/" + prnt.belonging.sub.indexOf(prnt));
+            var _ptr = getJptr(prnt.isb,
+                "/func/" + prnt.isb.func.indexOf(prnt));
             data.data.parents.push(_ptr);
             // データ再構築
-            $("#side-subnode-parent").sideNav("hide");
-            var _jptr = getJptr(data.belonging,
-                "/sub/" + data.belonging.sub.indexOf(data));
+            $("#side-func-parent").sideNav("hide");
+            var _jptr = getJptr(data.isb,
+                "/func/" + data.isb.func.indexOf(data));
             makeTree(dataset);
-            clickSubNode(perseJptr(root, _jptr));
+            clickFuncNode(perseJptr(root, _jptr));
         });
-        $("#side-subnode-parent").sideNav("show");
+        $("#side-func-parent").sideNav("show");
     });
     // Sortable List Option of parents
-    if ("subnodeParentsSort" in window) { subnodeParentsSort.destroy(); }
-    var el = document.getElementById("subnode-parents");
-    subnodeParentsSort = Sortable.create(el, {
+    if ("funcParentsSort" in window) { funcParentsSort.destroy(); }
+    var el = document.getElementById("func-parents");
+    funcParentsSort = Sortable.create(el, {
         draggable: ".collection-item.drag",
         filter: ".js-remove",
         onFilter: function (evt) {
@@ -837,7 +905,7 @@ function clickSubNode(data) {
         }
     });
 
-    var cldrn = d3.select("#subnode-children")
+    var cldrn = d3.select("#func-children")
         .selectAll("li.collection-item")
         .data(function () { return data.children ? data.children : []; });
     cldrn.exit().remove();
@@ -846,102 +914,45 @@ function clickSubNode(data) {
     enteredCldrn.merge(cldrn)
         .attr("class", "collection-item drag")
         .text(function (d) { return d.data.name; });
-    // add remove button for children
-    d3.select("#node-edit .collection.children")
-        .selectAll("li.collection-item")
-        .append("span").attr("class", "suffix")
-        .append("i")
-        .attr("class", "js-remove tiny material-icons")
-        .text("remove_circle_outline");
-    // insert add-child button
-    var addParentBtn = d3.select("#node-edit .collection.children")
-        .append("li").attr("class", "collection-item add")
-        .append("button").attr("class", "waves-effect waves-light btn");
-    addParentBtn.text("Add")
-        .append("i").attr("class", "material-icons left")
-        .text("add");
-    // behavior when add-child button is clicked 
-    addParentBtn.on("click", function () {
-        var newName = window.prompt("Input new child node name.", "");
-        if (newName === null) {
-            return;
-        }
-        var newObj = makeNewNode(newName);
-        if (data.data.children === undefined) {
-            data.data["children"] = [];
-        }
-        data.data.children.push(newObj);
-        makeTree(dataset);
-    })
-
-
-    // Sub Node のSortable設定
-    if ("nodeSubSort" in window) { nodeSubSort.destroy(); }
-    var el_sub = document.getElementById("node-subnode");
-    nodeSubSort = Sortable.create(el_sub, {
-        draggable: ".collection-item.drag",
-        filter: ".js-remove",
-        onFilter: function (evt) {
-            var item = evt.item;
-            var ctrl = evt.target;
-            if (Sortable.utils.is(ctrl, ".js-remove")) {  // Click on remove button
-                item.parentNode.removeChild(item); // remove sortable item
-                // dataから削除
-                data.data.sub.splice(evt.oldIndex - 1, 1);
-                // 削除したsub nodeを親としているjson pointerを削除
-                var _jptr = getJptr(data) + "/sub/" + String(evt.oldIndex - 1);
-                delJptr(data, _jptr);
-                makeTree(dataset);
-            }
-        },
-        // drag後の処理
-        onUpdate: function (evt) {
-            var _old = evt.oldIndex;
-            var _new = evt.newIndex;
-            var _jptr = getJptr(data);
-            var _jptr_old = _jptr + "/sub/" + (_old - 1);
-            var _jptr_new = _jptr + "/sub/" + (_new - 1);
-            // temporary variable for sub-node element of evt.oldIndex
-            var _t = data.data.sub[_old - 1];
-            // old <- new
-            data.data.sub[_old - 1] = data.data.sub[_new - 1];
-            // new <- old
-            data.data.sub[_new - 1] = _t;
-            // swap
-            swapJptr(data, _jptr_old, _jptr_new);
-            // データ再構築
-            clearEditer();
-            makeTree(dataset);
-        }
-    });
 }
 
 // sidenavのnode editerを空にする
 function clearEditer() {
-    d3.select("#subnode-edit")
+    d3.select("#func-edit")
         .style("display", "none");
     d3.select("#node-edit")
         .style("display", "none");
 }
 
-// create dictionary of new node
-function makeNewNode(name) {
+// create dictionary of new component node
+function makeNewComp(name) {
     var dic = {};
     dic["name"] = name;
     dic["cat"] = "";
-    dic["sub"] = [];
+    dic["func"] = [];
+    dic["param"] = [];
     dic["children"] = [];
-    dic["attr"] = [];
+    dic["note"] = [];
     return dic;
 }
 
-// create dictionary of new sub node
-function makeNewSubNode(name) {
+// create dictionary of new function node
+function makeNewFunc(name) {
     var dic = {};
     dic["name"] = name;
     dic["cat"] = "";
     dic["parents"] = [];
-    dic["attr"] = [];
+    dic["note"] = [];
+    return dic;
+}
+
+// create dictionary of new parameter node
+function makeNewParam(name) {
+    var dic = {};
+    dic["name"] = name;
+    dic["cat"] = "";
+    dic["parents"] = [];
+    dic["note"] = [];
     return dic;
 }
 
@@ -961,24 +972,27 @@ function delJptr(node, jptr) {
     var argIndex = jptr.match(/\d+$/)[0];  // indexを切り出し
     var jptrLeft = jptr.slice(0, -argIndex.length);
     var re = RegExp("^" + jptrLeft)
+    var _del = function (ptr, i, arr) {
+        if (!re.test(ptr)) { return; }
+        // 引数のjptrと、data中のjptrのindexを比較
+        var _right = ptr.split(re)[1];
+        var jptrIndex = _right.match(/^\d+/)[0];  // each要素のindex
+        var jptrRight = _right.split(/^\d+/)[1];  // each要素のindex以降のjptr文字列
+        if (jptrIndex == argIndex) {
+            arr.splice(i, 1);
+        }
+        // 削除したindexより後の要素を繰り上げ
+        if (Number(jptrIndex) > Number(argIndex)) {
+            var newNum = Number(jptrIndex) - 1;
+            arr[i] = jptrLeft + String(newNum) + jptrRight;
+        }
+    }
     node.descendants().forEach(function (d) {
-        d.data.sub.forEach(function (sub) {
-            sub.parents.forEach(function (p, i, arr) {
-                if (!re.test(p)) { return; }
-                // 引数のjptrと、data中のjptrのindexを比較
-                var _right = p.split(re)[1];
-                var jptrIndex = _right.match(/^\d+/)[0];  // each要素のindex
-                var jptrRight = _right.split(/^\d+/)[1];  // each要素のindex以降のjptr文字列
-                if (jptrIndex == argIndex) {
-                    arr.splice(i, 1);
-                }
-                // 削除したindexより後の要素を繰り上げ
-                if (Number(jptrIndex) > Number(argIndex)) {
-                    var newNum = Number(jptrIndex) - 1;
-                    sub.parents[i] = jptrLeft + String(newNum) + jptrRight;
-                }
-
-            })
+        d.data.func.forEach(function (f) {
+            f.parents.forEach(_del)
+        })
+        d.data.param.forEach(function (p) {
+            p.parents.forEach(_del)
         })
     });
 }
@@ -986,18 +1000,36 @@ function delJptr(node, jptr) {
 function swapJptr(node, oldJptr, newJptr) {
     var oldRe = RegExp("^" + oldJptr);
     var newRe = RegExp("^" + newJptr);
+    var _replace = function (str) {
+        var replaced = str.replace(oldRe, newJptr);
+        if (replaced != str) {
+            return replaced;
+        }
+        else {
+            replaced = ptr.replace(newRe, oldJptr);
+            if (replaced != ptr) {
+                return replaced;
+            } else {
+                return false;
+            }
+        }
+    }
     node.descendants().forEach(function (d) {
-        d.data.sub.forEach(function (sub) {
-            sub.parents.forEach(function (p, i, arr) {
-                var replaced = p.replace(oldRe, newJptr);
-                if (replaced != p) {
+        // swap func-parent json pointer
+        d.data.func.forEach(function (f) {
+            f.parents.forEach(function (ptr, i, arr) {
+                var replaced = _replace(ptr);
+                if (replaced != false) {
                     arr[i] = replaced;
-                    return;
                 }
-                replaced = p.replace(newRe, oldJptr);
-                if (replaced != p) {
+            })
+        })
+        // swap param-parent json pointer
+        d.data.param.forEach(function (p) {
+            p.parents.forEach(function (ptr, i, arr) {
+                var replaced = _replace(ptr);
+                if (replaced != false) {
                     arr[i] = replaced;
-                    return;
                 }
             })
         })
