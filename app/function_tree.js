@@ -640,8 +640,9 @@ function clickNode(data) {
             data.data.children[_new - 1] = _t;
             replaceSubParent(data.children[_new - 1], _jptr_new, _jptr_old);
             // データ再構築
-            clearEditer();
+            var _jptr = getJptr(data);
             makeTree(dataset);
+            clickNode(perseJptr(root, _jptr));
         }
     });
     // Sub Node のSortable設定
@@ -679,8 +680,9 @@ function clickNode(data) {
             // swap
             swapJptr(data, _jptr_old, _jptr_new);
             // データ再構築
-            clearEditer();
+            var _jptr = getJptr(data);
             makeTree(dataset);
+            clickNode(perseJptr(root, _jptr));
         }
     });
 }
@@ -791,7 +793,10 @@ function clickSubNode(data) {
             data.data.parents.push(_ptr);
             // データ再構築
             $("#side-subnode-parent").sideNav("hide");
+            var _jptr = getJptr(data.belonging,
+                "/sub/" + data.belonging.sub.indexOf(data));
             makeTree(dataset);
+            clickSubNode(perseJptr(root, _jptr));
         });
         $("#side-subnode-parent").sideNav("show");
     });
