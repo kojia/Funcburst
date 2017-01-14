@@ -378,17 +378,10 @@ function makeTree(dataset) {
                 + " " + d.parent.y + "," + d.parent.x;
         });
 
-<<<<<<< HEAD
     // ノード作成
     var node = d3.select(".treeContainer")
         .selectAll(".node")
         .data(root.descendants())
-=======
-    // sub nodeをSVG描画
-    var subNode = d3.select('.treeContainer')
-        .selectAll(".subNode")
-        .data(root.subDescendants())
->>>>>>> reload-after-edit
         .enter()
         .append("g");
     drawNode(node)
