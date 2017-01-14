@@ -121,6 +121,9 @@ function makeTree(dataset) {
         });
         // set parameter-node data
         node.param = Array();  // create array for param-node
+        if(node.data.param == undefined){
+            node.data.param = Array();
+        }
         node.data.param.forEach(function (paramElm, i) {
             node.param.push({
                 "data": paramElm,
@@ -440,7 +443,6 @@ function makeTree(dataset) {
     var xMin = Math.min.apply(null, xArray);
     var xMax = Math.max.apply(null, xArray);
     var getLinkColor = function (x) {
-        console.log(x);
         var h = 350 * (x - xMin) / (xMax - xMin);
         return "hsla(" + h + ",100%,60%,1)";
     };

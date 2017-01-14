@@ -1,6 +1,6 @@
 {
     "name": "明治",
-    "sub": [
+    "func": [
         {
             "name": "お菓子",
             "parents": []
@@ -9,91 +9,91 @@
     "children": [
         {
             "name": "チョコ菓子シリーズ",
-            "sub": [
+            "func": [
                 {
                     "name": "チョコレート菓子",
                     "parents": [
-                        "/sub/0"
+                        "/func/0"
                     ]
                 }
             ],
             "children": [
                 {
                     "name": "きのこの山",
-                    "sub": [
+                    "func": [
                         {
                             "name": "キノコ型チョコ",
                             "parents": [
-                                "/children/0/sub/0"
+                                "/children/0/func/0"
                             ]
                         },
                         {
                             "name": "軸クラッカー",
                             "parents": [
-                                "/children/0/sub/0"
+                                "/children/0/func/0"
                             ]
                         }
                     ],
                     "children": [
                         {
                             "name": "味わいミント",
-                            "sub": [
+                            "func": [
                                 {
                                     "name": "ミントチョコ",
                                     "parents": [
-                                        "/children/0/children/0/sub/0"
+                                        "/children/0/children/0/func/0"
                                     ]
                                 },
                                 {
                                     "name": "ココアクラッカー",
                                     "parents": [
-                                        "/children/0/children/0/sub/1"
+                                        "/children/0/children/0/func/1"
                                     ]
                                 }
                             ]
                         },
                         {
                             "name": "黒糖きなこ",
-                            "sub": [
+                            "func": [
                                 {
                                     "name": "黒糖チョコ",
                                     "parents": [
-                                        "/children/0/children/0/sub/0"
+                                        "/children/0/children/0/func/0"
                                     ]
                                 },
                                 {
                                     "name": "きなこチョコ",
                                     "parents": [
-                                        "/children/0/children/0/sub/0"
+                                        "/children/0/children/0/func/0"
                                     ]
                                 },
                                 {
                                     "name": "プレーンクラッカー",
                                     "parents": [
-                                        "/children/0/children/0/sub/1"
+                                        "/children/0/children/0/func/1"
                                     ]
                                 }
                             ]
                         },
                         {
                             "name": "チョコバナナ",
-                            "sub": [
+                            "func": [
                                 {
                                     "name": "ミルクチョコ",
                                     "parents": [
-                                        "/children/0/children/0/sub/0"
+                                        "/children/0/children/0/func/0"
                                     ]
                                 },
                                 {
                                     "name": "バナナチョコ",
                                     "parents": [
-                                        "/children/0/children/0/sub/0"
+                                        "/children/0/children/0/func/0"
                                     ]
                                 },
                                 {
                                     "name": "ココアクラッカー",
                                     "parents": [
-                                        "/children/0/children/0/sub/1"
+                                        "/children/0/children/0/func/1"
                                     ]
                                 }
                             ]
@@ -102,7 +102,7 @@
                 },
                 {
                     "name": "たけのこの里",
-                    "sub": [
+                    "func": [
                         {
                             "name": "たけのこ型チョコ",
                             "parents": []
@@ -115,7 +115,7 @@
                     "children": [
                         {
                             "name": "マカダミアクッキー",
-                            "sub": [
+                            "func": [
                                 {
                                     "name": "ミルクチョコ",
                                     "parents": []
@@ -132,7 +132,7 @@
                         },
                         {
                             "name": "焼き栗",
-                            "sub": [
+                            "func": [
                                 {
                                     "name": "黒糖チョコ",
                                     "parents": []
@@ -151,7 +151,7 @@
                 },
                 {
                     "name": "すぎのこ村",
-                    "sub": [
+                    "func": [
                         {
                             "name": "チョココーティング",
                             "parents": []
