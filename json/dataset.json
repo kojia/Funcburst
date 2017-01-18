@@ -6,6 +6,12 @@
             "parents": []
         }
     ],
+    "param": [
+        {
+            "name": "parameter",
+            "parents": []
+        }
+    ],
     "children": [
         {
             "name": "チョコ菓子シリーズ",
@@ -32,6 +38,12 @@
                             "parents": [
                                 "/children/0/func/0"
                             ]
+                        }
+                    ],
+                    "param": [
+                        {
+                            "name": "parameter",
+                            "parents": []
                         }
                     ],
                     "children": [

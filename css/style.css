@@ -88,35 +88,35 @@ ul.collection.with-header li.collection-item.add button {
 	width: 100%;
 }
 
-#node-edit, #func-edit {
+#comp-edit, #func-edit {
 	color: black;
 	line-height: 1.5rem;
 }
-#node-edit h6 {
+#comp-edit h6 {
 	color: lightseagreen;
 }
-#node-edit input, #func-edit input {
+#comp-edit input, #func-edit input {
 	margin-bottom: 0.2rem;
 	height: 1.2rem;
 }
 #node-children .collection-item, 
 #node-func .collection-item,
-/*#func-isb .collection-item,*/
-/*#func-children .collection-item */
-#func-parents .collection-item{
+#node-param .collection-item,
+#func-parents .collection-item,
+#param-parents .collection-item{
 	margin-top: 0;
 	display: table;
 }
-#func-parent li{
+#add-func-parent li{
 	padding: 0.5rem;
 }
 
-#func-parent .func-prnt-name,
-#func-parent .func-isb-name {
+.side-prnt-name,
+.side-prnt-isb {
 	line-height: 1.3;
 }
 
-#func-parent .func-isb-name {
+.side-prnt-isb {
 	color: gray;
 	text-align: right;
 }

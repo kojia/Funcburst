@@ -68,10 +68,10 @@
 			</div>
 		</nav>
 
-		<!--Node Editer-->
 		<ul id="slide-out" class="side-nav teal lighten-4" style="transform: translateX(0%);">
+<!--Component Editer-->
 <li>
-	<div id="node-edit" class="card-panel teal lighten-2" style="display:none">
+	<div id="comp-edit" class="card-panel teal lighten-2" style="display:none">
 <ul class="collection with-header">
 	<li class="collection-header">
 		<h6>Component Name</h6>
@@ -82,19 +82,24 @@
 </form>
 </li>
 </ul>
-<ul class="collection with-header parent">
+<ul class="collection with-header" id="node-parent">
 	<li class="collection-header">
 		<h6>Parent</h6>
 	</li>
 </ul>
-<ul class="collection with-header children" id="node-children">
+<ul class="collection with-header" id="node-children">
 	<li class="collection-header">
 		<h6>Children</h6>
 	</li>
 </ul>
-<ul class="collection with-header func" id="node-func">
+<ul class="collection with-header" id="node-func">
 	<li class="collection-header">
 		<h6>Function</h6>
+	</li>
+</ul>
+<ul class="collection with-header" id="node-param">
+	<li class="collection-header">
+		<h6>Parameter</h6>
 	</li>
 </ul>
 </div>
@@ -129,6 +134,31 @@
 </ul>
 </div>
 </li>
+<!--param-node Editer-->
+<li>
+	<div id="param-edit" class="card-panel orange lighten-2" style="display:none">
+<ul class="collection with-header">
+	<li class="collection-header">
+		<h6>Definition of Parameter</h6>
+	</li>
+	<li class="collection-item">
+		<form name="paramName" onsubmit="return false;">
+<input value="" id="paramName" type="text">
+</form>
+</li>
+</ul>
+<ul class="collection with-header" id="param-icb">
+	<li class="collection-header">
+		<h6>Component</h6>
+	</li>
+</ul>
+<ul class="collection with-header" id="param-parents">
+	<li class="collection-header">
+		<h6>Parent</h6>
+	</li>
+</ul>
+</div>
+</li>
 </ul>
 </header>
 
@@ -140,12 +170,21 @@
 </main>
 
 <!--parent select SideNav opened from func-node edit pane-->
-<ul id="func-parent" class="side-nav collection with-header glass">
+<ul id="add-func-parent" class="side-nav collection with-header glass">
 	<li class="collection-header">
 		Select Additional Parent Function
 	</li>
 </ul>
-<a href="#" data-activates="func-parent" id="side-func-parent" class="button-collapse"></a>
+<a href="#" data-activates="add-func-parent" id="side-add-func-parent" class="button-collapse"></a>
+<!--parent select SideNav opened from param-node edit pane-->
+<ul id="add-param-parent" class="side-nav collection with-header glass">
+	<li class="collection-header">
+		Select Additional Parent Function
+	</li>
+</ul>
+<a href="#" data-activates="add-param-parent" id="side-add-param-parent" class="button-collapse"></a>
+
+
 
 <!--文字列幅測定用span-->
 <span id="ruler" style="visibility:hidden;position:absolute;white-space:nowrap;"></span>
@@ -155,27 +194,40 @@
 	<div class="modal-content">
 		<h4>Input New Child Name</h4>
 		<form onsubmit="return false;">
-			<div class="input-field">
-				<input id="input-node-add-child" placeholder="New Child Name" type="text">
-			</div>
-		</form>
-	</div>
-	<div class="modal-footer">
-		<a href="#!" class=" modal-action modal-close waves-effect waves-green btn-flat">Agree</a>
-	</div>
+<div class="input-field">
+	<input id="input-node-add-child" placeholder="New Child Name" type="text">
+</div>
+</form>
+</div>
+<div class="modal-footer">
+	<a href="#!" class=" modal-action modal-close waves-effect waves-green btn-flat">Agree</a>
+</div>
 </div>
 <div id="modal-node-add-func" class="modal">
 	<div class="modal-content">
-		<h4>Input the definition of Additional Function</h4>
+		<h4>Define Additional Function</h4>
 		<form onsubmit="return false;">
-			<div class="input-field">
-				<input id="input-node-add-func" placeholder="New Sub-Node Name" type="text">
-			</div>
-		</form>
-	</div>
-	<div class="modal-footer">
-		<a href="#!" class=" modal-action modal-close waves-effect waves-green btn-flat">Agree</a>
-	</div>
+<div class="input-field">
+	<input id="input-node-add-func" placeholder="Additional Function Definition" type="text">
+</div>
+</form>
+</div>
+<div class="modal-footer">
+	<a href="#!" class=" modal-action modal-close waves-effect waves-green btn-flat">Agree</a>
+</div>
+</div>
+<div id="modal-comp-add-param" class="modal">
+	<div class="modal-content">
+		<h4>Define Additional Parameter</h4>
+		<form onsubmit="return false;">
+<div class="input-field">
+	<input id="input-comp-add-param" placeholder="Additional Parameter Definition" type="text">
+</div>
+</form>
+</div>
+<div class="modal-footer">
+	<a href="#!" class=" modal-action modal-close waves-effect waves-green btn-flat">Agree</a>
+</div>
 </div>
 
 
