@@ -568,7 +568,7 @@ function clickNode(data) {
     setEditPane("comp");
 
     // bind name
-    document.nodeName.reset();  // reset form
+    document.compName.reset();  // reset form
     d3.select("#comp-edit #name")
         .attr("value", data.data.name)
         .on("change", function () {
@@ -576,7 +576,7 @@ function clickNode(data) {
             makeTree(dataset);
         });
     // bind parent
-    var prnt = d3.select("#node-parent")
+    var prnt = d3.select("#comp-parent")
         .selectAll("li.collection-item")
         .data(function () { return data.parent ? [data.parent] : []; });
     prnt.exit().remove();  // 減った要素を削除
@@ -589,7 +589,7 @@ function clickNode(data) {
         .attr("type", "text")
         .attr("value", function (d) { return d === null ? "no parent" : d.data.name; });
     // bind children
-    var cldrn = d3.select("#node-children")
+    var cldrn = d3.select("#comp-children")
         .selectAll("li.collection-item")
         .data(function () { return data.children ? data.children : []; });
     cldrn.exit().remove();
@@ -599,26 +599,26 @@ function clickNode(data) {
         .attr("class", "collection-item drag")
         .text(function (d) { return d.data.name; });
     // add remove button for children
-    d3.select("#node-children")
+    d3.select("#comp-children")
         .selectAll("li.collection-item")
         .append("span").attr("class", "suffix")
         .append("i")
         .attr("class", "js-remove tiny material-icons")
         .text("remove_circle_outline");
     // insert add-child button
-    var addChildBtn = d3.select("#node-children")
+    var addChildBtn = d3.select("#comp-children")
         .append("li")
         .attr("class", "collection-item add")
         .append("button")
         .attr("class", "waves-effect waves-light btn")
-        .attr("href", "#modal-node-add-child");
+        .attr("href", "#modal-comp-add-child");
     addChildBtn.text("Add")
         .append("i").attr("class", "material-icons left")
         .text("add");
     // behavior when add-child button is clicked 
     var addChild = function () {
-        var _nodeName = $("#input-node-add-child").val();
-        var newObj = makeNewComp(_nodeName);
+        var _compName = $("#input-comp-add-child").val();
+        var newObj = makeNewComp(_compName);
         if (data.data.children === undefined) {
             data.data["children"] = [];
         }
@@ -628,22 +628,22 @@ function clickNode(data) {
         clickNode(perseJptr(root, _jptr));
     }
     addChildBtn.on("click", function () {
-        $("#modal-node-add-child").modal("open");
+        $("#modal-comp-add-child").modal("open");
         // add child when enter key pressed
-        d3.select("#modal-node-add-child form")
+        d3.select("#modal-comp-add-child form")
             .on("submit", function () {
                 addChild();
-                $("#modal-node-add-child").modal("close");
+                $("#modal-comp-add-child").modal("close");
                 return false;
             });
-        $("#modal-node-add-child form")[0].reset();  // inputテキストボックスを空にする
-        $("#input-node-add-child").focus();  // テキストボックスにフォーカス
-        d3.select("#modal-node-add-child a")  // behavior when AGREE button clicked
+        $("#modal-comp-add-child form")[0].reset();  // inputテキストボックスを空にする
+        $("#input-comp-add-child").focus();  // テキストボックスにフォーカス
+        d3.select("#modal-comp-add-child a")  // behavior when AGREE button clicked
             .on("click", addChild);
     })
     // Sortable List Option for Children
     if ("compChildrenSort" in window) { compChildrenSort.destroy(); }
-    var el = document.getElementById("node-children");
+    var el = document.getElementById("comp-children");
     compChildrenSort = Sortable.create(el, {
         draggable: ".collection-item.drag",
         filter: ".js-remove",
@@ -684,7 +684,7 @@ function clickNode(data) {
     });
 
     // bind func-nodes
-    var func = d3.select("#node-func")
+    var func = d3.select("#comp-func")
         .selectAll("li.collection-item")
         .data(function () { return data.func ? data.func : []; });
     func.exit().remove();
@@ -699,7 +699,7 @@ function clickNode(data) {
         .attr("class", "js-remove tiny material-icons")
         .text("remove_circle_outline");
     // insert add-func-node button
-    var addFuncBtn = d3.select("#node-func")
+    var addFuncBtn = d3.select("#comp-func")
         .append("li").attr("class", "collection-item add")
         .append("button").attr("class", "waves-effect waves-light btn");
     addFuncBtn.text("Add")
@@ -707,7 +707,7 @@ function clickNode(data) {
         .text("add");
     // behavior when add-func-node button is clicked 
     var addFunc = function () {
-        var _name = $("#input-node-add-func").val();
+        var _name = $("#input-comp-add-func").val();
         var newObj = makeNewFunc(_name);
         if (data.data.func === undefined) {
             data.data["func"] = [];
@@ -718,22 +718,22 @@ function clickNode(data) {
         clickNode(perseJptr(root, _jptr));
     }
     addFuncBtn.on("click", function () {
-        $("#modal-node-add-func").modal("open");
+        $("#modal-comp-add-func").modal("open");
         // add func-node when enter key pressed
-        d3.select("#modal-node-add-func form")
+        d3.select("#modal-comp-add-func form")
             .on("submit", function () {
                 addFunc();
-                $("#modal-node-add-func").modal("close");
+                $("#modal-comp-add-func").modal("close");
                 return false;
             });
-        $("#modal-node-add-func form")[0].reset();  // inputテキストボックスを空にする
-        $("#input-node-add-func").focus();  // テキストボックスにフォーカス
-        d3.select("#modal-node-add-func a")  // behavior when AGREE button clicked
+        $("#modal-comp-add-func form")[0].reset();  // inputテキストボックスを空にする
+        $("#input-comp-add-func").focus();  // テキストボックスにフォーカス
+        d3.select("#modal-comp-add-func a")  // behavior when AGREE button clicked
             .on("click", addFunc);
     });
     // func-Node のSortable設定
     if ("compFuncSort" in window) { compFuncSort.destroy(); }
-    var el_func = document.getElementById("node-func");
+    var el_func = document.getElementById("comp-func");
     compFuncSort = Sortable.create(el_func, {
         draggable: ".collection-item.drag",
         filter: ".js-remove",
@@ -776,7 +776,7 @@ function clickNode(data) {
     });
 
     // bind param-node 
-    var param = d3.select("#node-param")
+    var param = d3.select("#comp-param")
         .selectAll("li.collection-item")
         .data(function () { return data.param ? data.param : []; });
     param.exit().remove();
@@ -791,7 +791,7 @@ function clickNode(data) {
         .attr("class", "js-remove tiny material-icons")
         .text("remove_circle_outline");
     // insert add-param-node button
-    var addParamBtn = d3.select("#node-param")
+    var addParamBtn = d3.select("#comp-param")
         .append("li").attr("class", "collection-item add")
         .append("button").attr("class", "waves-effect waves-light btn");
     addParamBtn.text("Add")
@@ -825,7 +825,7 @@ function clickNode(data) {
     });
     // Sortable list option for param of component
     if ("compParamSort" in window) { compParamSort.destroy(); }
-    var el_param = document.getElementById("node-param");
+    var el_param = document.getElementById("comp-param");
     compParamSort = Sortable.create(el_param, {
         draggable: ".collection-item.drag",
         filter: ".js-remove",

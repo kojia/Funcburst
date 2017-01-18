@@ -99,9 +99,9 @@ ul.collection.with-header li.collection-item.add button {
 	margin-bottom: 0.2rem;
 	height: 1.2rem;
 }
-#node-children .collection-item, 
-#node-func .collection-item,
-#node-param .collection-item,
+#comp-children .collection-item, 
+#comp-func .collection-item,
+#comp-param .collection-item,
 #func-parents .collection-item,
 #param-parents .collection-item{
 	margin-top: 0;
