@@ -61,12 +61,12 @@ $("#dataURI").click(function () {
 });
 // open svg in another window
 $("#show-svg").click(function () {
-    var svg = $("#treeSvg");
+    var svg = $("#compTreeSVG");
     var showsvg = $("<svg>");
     showsvg.attr({
         "xmlns": "http://www.w3.org/2000/svg",
-        "width": $("#treeSvg").width() * 1.1,
-        "height": $("#treeSvg").height() * 1.1
+        "width": $("#compTreeSVG").width() * 1.1,
+        "height": $("#compTreeSVG").height() * 1.1
     });
     showsvg.html(svg.html());
     window.open("data:image/svg+xml;charset=utf-8,"
@@ -100,7 +100,7 @@ function getParamLabelWidth() {
 
 function makeTree(dataset) {
     // svg initialize
-    d3.select("#treeSvg").select("svg").remove();
+    d3.select("#compTreeSVG").select("svg").remove();
 
     // hierarchy initialize
     root = d3.hierarchy(dataset, function (d) {
@@ -135,7 +135,7 @@ function makeTree(dataset) {
 
     // tree setting
     var tree = d3.tree()
-        // .size([$(window).height() - $("#top-nav").height(), $("#treeSvg").width() * 0.9])
+        // .size([$(window).height() - $("#top-nav").height(), $("#compTreeSVG").width() * 0.9])
         .nodeSize([getNodeHeight(), getNodeWidth()])
         .separation(nodeSeparate);
 
@@ -333,8 +333,8 @@ function makeTree(dataset) {
                 return perseJptr(root, p);
             });
             // set child for parent func-node that is set above
-            paramElm.parents.forEach(function (paramPrnt){
-                if(paramPrnt.children === undefined) {
+            paramElm.parents.forEach(function (paramPrnt) {
+                if (paramPrnt.children === undefined) {
                     paramPrnt.children = Array();
                 }
                 paramPrnt.children.push(paramElm);
@@ -393,14 +393,14 @@ function makeTree(dataset) {
     var zoom = d3.zoom()
         .scaleExtent([.2, 10])
         .translateExtent(
-        [[$("#treeSvg").width() * -2, $("#treeSvg").height() * -2],
-        [$("#treeSvg").width() * 2, $("#treeSvg").height() * 2]])
+        [[$("#compTreeSVG").width() * -2, $("#compTreeSVG").height() * -2],
+        [$("#compTreeSVG").width() * 2, $("#compTreeSVG").height() * 2]])
         .on("zoom", zoomed);
     function zoomed() {
         d3.select(".treeContainer").attr("transform", d3.event.transform);
     }
 
-    var svg = d3.select("#treeSvg")
+    var svg = d3.select("#compTreeSVG")
         .append("svg")
         .attr("width", "100%")
         .attr("height", "100%")
@@ -409,7 +409,7 @@ function makeTree(dataset) {
         .attr("class", "treeContainer");
     svg.call(zoom.transform, d3.zoomIdentity.scale(0.5));
 
-    var k = $("#treeSvg").height() / treeWidth * 0.9;
+    var k = $("#compTreeSVG").height() / treeWidth * 0.9;
     var ty = treeWidth * k / 2;
     if (k > 1) { k = 1; ty = $("svg").height() / 2; }
     svg.call(zoom.transform, d3.zoomIdentity
@@ -532,6 +532,8 @@ function makeTree(dataset) {
     paramNode.select("text")
         .html(function (d) { return tspanStringify(d.label, getParamLabelWidth()) });
     paramNode.on("click", clickParamNode);
+
+    makeFMTree(root);
 };
 
 function drawNode(node) {
@@ -1139,6 +1141,139 @@ function clickParamNode(data) {
         }
     });
 }
+
+// perse function means tree from component tree
+function makeFMTree(root) {
+    var fmData = {
+        "name": "Customer",
+        "cat": "root",
+        "children": []
+    };
+    var setFMchild = function (node) {
+        if (node.children === undefined) {
+            return Array();
+        } else {
+            return node.children
+                .filter(function (child) {
+                    return child.isb != undefined;
+                })
+                .map(function (child) {
+                    return {
+                        "cat": "func",
+                        "node": child,
+                        "name": child.data.name,
+                        "children": [{
+                            "cat": "means",
+                            "node": child.isb,
+                            "name": child.isb.data.name,
+                            "children": setFMchild(child)
+                        }]
+                    }
+                })
+        }
+    }
+    root.func.forEach(function (node) {
+        fmData.children.push({
+            "cat": "func",
+            "node": node,
+            "name": node.data.name,
+            "children": [{
+                "cat": "means",
+                "node": root,
+                "name": root.data.name,
+                "children": setFMchild(node)
+            }]
+        })
+    });
+
+    // hierarchy initialize
+    fmroot = d3.hierarchy(fmData, function (d) {
+        return d["children"];
+    })
+
+    //tree setting
+    var tree = d3.tree()
+        .size([600, 600]);
+    // create tree layout
+    tree(fmroot);
+
+    // svg initialize
+    d3.select("#FMTreeSVG").select("svg").remove();
+    // treeを入れるコンテナを作成
+    var zoom = d3.zoom()
+        .scaleExtent([.2, 10])
+        .translateExtent(
+        [[$("#FMTreeSVG").width() * -2, $("#FMTreeSVG").height() * -2],
+        [$("#FMTreeSVG").width() * 2, $("#FMTreeSVG").height() * 2]])
+        .on("zoom", zoomed);
+    function zoomed() {
+        d3.select("#FMTreeSVG .treeContainer").attr("transform", d3.event.transform);
+    }
+    var svg = d3.select("#FMTreeSVG")
+        .append("svg")
+        .attr("width", "700")
+        .attr("height", "700");
+    // .call(zoom);
+    svg.append("g")
+        .attr("class", "treeContainer");
+    // svg.call(zoom.transform, d3.zoomIdentity.scale(0.5));
+    // tree全体の大きさを取得
+    // var left = root;
+    // var right = root;
+    // root.eachBefore(function (node) {
+    //     if (node.x < left.x) {
+    //         left = node;
+    //     }
+    //     if (node.x > right.x) {
+    //         right = node;
+    //     }
+    // });
+    // var treeWidth = (right.x - left.x) ? (right.x - left.x) : 1;
+    // var k = $("#FMTreeSVG").height() / treeWidth * 0.9;
+    // var ty = treeWidth * k / 2;
+    // if (k > 1) { k = 1; ty = $("svg").height() / 2; }
+    // svg.call(zoom.transform, d3.zoomIdentity
+    //     .translate(10, ty)
+    //     .scale(k));
+
+    // ノード間を線でつなぐ
+    d3.select("#FMTreeSVG .treeContainer").selectAll(".link")
+        .data(fmroot.descendants().slice(1))
+        .enter()
+        .append("path")
+        .attr("class", "link")
+        .attr("fill", "none")
+        .attr("stroke-width", 2)
+        .attr("stroke-dasharray", [2, 1])
+        .attr("stroke", "gray")
+        .attr("d", function (d) {
+            return "M" + d.x + "," + d.y
+                + "C" + (d.x + d.parent.x) / 2 + "," + d.y
+                + " " + (d.x + d.parent.x) / 2 + "," + d.parent.y
+                + " " + d.parent.x + "," + d.parent.y;
+        });
+
+    // ノード作成
+    var node = d3.select("#FMTreeSVG .treeContainer")
+        .selectAll(".node")
+        .data(fmroot.descendants())
+        .enter()
+        .append("g")
+        .attr("class", "node")
+        .attr("transform", function (d) {
+            return "translate(" + d.x + "," + d.y + ")";
+        });
+    node.append("circle")
+        .attr("r", 4)
+        .attr("fill", "steelblue");
+    node.append("text")
+        .text(function (d) {
+            return d.data.name;
+        })
+        .attr("font-size", "10px");
+    console.log(fmroot);
+}
+
 
 // sidenavのnode editerを空にする
 function clearEditer() {
