@@ -544,7 +544,7 @@ function drawNode(node) {
     //     .remove();
     node.append("circle")
         .attr("r", 4)
-        .attr("fill", "steelblue");
+        .attr("fill", "teal");
     // node.select("text")
     //     .remove();
     node.append("text")
@@ -864,7 +864,7 @@ function drawFuncNode(funcNode) {
     // func-nodeに円とテキストを表示
     funcNode.append("circle")
         .attr("r", 3)
-        .attr("fill", "green");
+        .attr("fill", "red");
     funcNode.append("text")
         .attr("font-size", getNodeHeight() * 0.9 + "px")
         .attr("fill", "dimgray")

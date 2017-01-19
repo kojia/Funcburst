@@ -4,33 +4,27 @@ main,
 footer {
 	padding-left: 300px;
 }
-
-#slide-out {
-    padding-left: 5px;
-	padding-right: 5px;
+html,
+body,
+main {
+    height: 100%;
+}
+.btn {
+	text-transform: none;
 }
 
+/*Tree SVG*/
 .container,
 #treeSvg {
     width: 100%;
     max-width: 100%;
     height: 100%;
 }
-
-html,
-body,
-main {
-    height: 100%;
-}
-
 #treeSvg {
 	padding: 10px;
 }
 
-.btn {
-	text-transform: none;
-}
-
+/*top navigation bar*/
 #top-nav{
 	height: 42px;
 	line-height: 42px;
@@ -62,10 +56,14 @@ main {
 	border-bottom-width: 1px;
 }
 
+/*side Editor*/
+#slide-out {
+    padding-left: 5px;
+	padding-right: 5px;
+}
 .side-nav li{
 	line-height: 3;
 }
-
 ul.collection.with-header li {
 	padding-top: 0.5rem;
 	padding-bottom: 0.5rem;
@@ -87,15 +85,16 @@ ul.collection.with-header li.collection-item.add button {
 	margin: 0;
 	width: 100%;
 }
-
-#comp-edit, #func-edit {
+#comp-edit, #func-edit, #param-edit {
 	color: black;
 	line-height: 1.5rem;
 }
 #comp-edit h6 {
 	color: lightseagreen;
 }
-#comp-edit input, #func-edit input {
+#comp-edit input, 
+#func-edit input,
+#param-edit input {
 	margin-bottom: 0.2rem;
 	height: 1.2rem;
 }
@@ -110,12 +109,10 @@ ul.collection.with-header li.collection-item.add button {
 #add-func-parent li{
 	padding: 0.5rem;
 }
-
 .side-prnt-name,
 .side-prnt-isb {
 	line-height: 1.3;
 }
-
 .side-prnt-isb {
 	color: gray;
 	text-align: right;
@@ -125,12 +122,11 @@ ul.collection.with-header li.collection-item.add button {
 	width:1%;
 	cursor: pointer;
 }
-
 .glass {
 	background: rgba(255,255,255,0.９);
 }
 
-
+/**/
 @media only screen and (max-width: 992px) {
 	header,
 	main,
