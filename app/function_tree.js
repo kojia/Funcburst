@@ -1,3 +1,4 @@
+// @licence MIT
 var dataset = makeNewComp("Root");
 makeTree(dataset);
 
