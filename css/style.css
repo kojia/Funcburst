@@ -43,13 +43,13 @@ main {
 	font-size: 1.5rem;
 }
 #top-nav .file-path-wrapper {
-	line-height: 42px;
 	padding-left: 0.5rem;
 	margin-right: 1rem;
 }
 #top-nav .file-path {
 	padding-left: 0.5rem;
-	margin-bottom: 0.5rem;
+	margin-top: 0.5rem;
+	margin-bottom: 0;
 	font-size: 1rem;
 	border-style: none none solid;
 	border-bottom-width: 1px;

@@ -9,7 +9,7 @@ $(document).ready(function () {
 
 // SVG画面サイズ調整
 $(document).ready(function () {
-    hsize = $(window).height() - $("#top-nav").height();
+    hsize = $(window).height() - ($("#top-nav").height() + $("#tree-tab").height());
     $("main").css("height", hsize + "px");
 });
 $(window).resize(function () {
