@@ -1200,7 +1200,11 @@ function makeFMTree(root) {
         .nodeSize([50, 60]);
     // create tree layout
     tree(fmroot);
+    // draw tree
+    drawFMTree(fmroot);
+}
 
+function drawFMTree(fmroot) {
     // svg initialize
     d3.select("#FMTreeSVG").select("svg").remove();
 
@@ -1273,7 +1277,13 @@ function makeFMTree(root) {
         });
     node.append("circle")
         .attr("r", 4)
-        .attr("fill", "steelblue");
+        .attr("fill", function(d){
+            if(d.data.cat=="func"){
+                return "red";
+            }else{
+                return "blue";
+            }
+        });
     node.append("text")
         .text(function (d) {
             return d.data.name;
