@@ -15,13 +15,11 @@ main {
 
 /*Tree SVG*/
 .container,
-#compTreeSVG {
+#compTreeSVG,
+#FMTreeSVG {
     width: 100%;
     max-width: 100%;
     height: 100%;
-}
-#treeSvg {
-	padding: 10px;
 }
 
 /*top navigation bar*/
