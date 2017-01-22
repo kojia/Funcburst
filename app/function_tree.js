@@ -1193,11 +1193,21 @@ function makeFMTree(root) {
 
     //tree setting
     var tree = d3.tree()
-        .nodeSize([50, 60]);
+        .nodeSize([getFMNodeWidth(), getFMNodeHeight()]);
     // create tree layout
     tree(fmroot);
     // draw tree
     drawFMTree(fmroot);
+}
+
+function getFMNodeHeight(){
+    return 70;
+}
+function getFMNodeWidth(){
+    return 100;
+}
+function getFMNodeFontSize(){
+    return 15;
 }
 
 function drawFMTree(fmroot) {
@@ -1262,7 +1272,7 @@ function drawFMTree(fmroot) {
         .text(function (d) {
             return d.data.name;
         })
-        .attr("font-size", "10px");
+        .attr("font-size", getFMNodeFontSize());
 
     console.log(fmroot);
 
@@ -1275,9 +1285,8 @@ function drawFMTree(fmroot) {
     var bbox = $("#FMTreeSVG .treeContainer")[0].getBBox();
     var k = $("#FM-tree").height() / bbox.height * 0.85;
     k = k > 10 ? 10 : k;
-    var tx = bbox.width / 2;
     svg.call(zoom.transform, d3.zoomIdentity
-        .translate(tx + 10, 10)
+        .translate(50, 10)
         .scale(k));
     if (_is_block == false) {
         $("#FM-tree").css("display", "none");
