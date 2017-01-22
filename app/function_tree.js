@@ -378,18 +378,7 @@ function makeTree(dataset) {
             })
             .reduce(function (a, b) { return a.concat(b); }, Array());
     }
-    // tree全体の大きさを取得
-    var left = root;
-    var right = root;
-    root.eachBefore(function (node) {
-        if (node.x < left.x) {
-            left = node;
-        }
-        if (node.x > right.x) {
-            right = node;
-        }
-    });
-    var treeWidth = (right.x - left.x) ? (right.x - left.x) : 1;
+
     // treeを入れるコンテナを作成
     var zoom = d3.zoom()
         .scaleExtent([.2, 10])
@@ -403,20 +392,11 @@ function makeTree(dataset) {
     }
 
     var svg = d3.select("#compTreeSVG")
-        .append("svg")
         .attr("width", "100%")
         .attr("height", "100%")
         .call(zoom);
     svg.append("g")
         .attr("class", "treeContainer");
-    svg.call(zoom.transform, d3.zoomIdentity.scale(0.5));
-
-    var k = $("#compTreeSVG").height() / treeWidth * 0.9;
-    var ty = treeWidth * k / 2;
-    if (k > 1) { k = 1; ty = $("#compTreeSVG svg").height() / 2; }
-    svg.call(zoom.transform, d3.zoomIdentity
-        .translate(10, ty)
-        .scale(k));
 
     // ノード間を線でつなぐ
     d3.select("#compTreeSVG .treeContainer").selectAll(".link")
@@ -537,6 +517,24 @@ function makeTree(dataset) {
         .html(function (d) { return tspanStringify(d.label, getParamLabelWidth()) });
     paramNode.on("click", clickParamNode);
 
+    // 画面サイズに合わせてツリーをオフセット&スケール
+    var _is_block = true;
+    if ($("#comp-tree").css("display") == "none") {
+        _is_block = false;
+        $("#comp-tree").css("display", "block");
+    }
+    var bbox = $("#compTreeSVG .treeContainer")[0].getBBox();
+    var k = $("#comp-tree").height() / bbox.height * 0.85;
+    k = k > 10 ? 10 : k;
+    var ty = bbox.height / 2;
+    ty = ty < 150 ? 150 : ty;
+    svg.call(zoom.transform, d3.zoomIdentity
+        .translate(10, ty + 10)
+        .scale(k));
+    if (_is_block == false) {
+        $("#comp-tree").css("display", "none");
+    }
+
     makeFMTree(root);
 };
 
@@ -546,13 +544,13 @@ function drawNode(node) {
         .attr("transform", function (d) {
             return "translate(" + d.y + "," + d.x + ")";
         });
-    // node.select("circle")
-    //     .remove();
+    node.select("circle")
+        .remove();
     node.append("circle")
         .attr("r", 4)
         .attr("fill", "teal");
-    // node.select("text")
-    //     .remove();
+    node.select("text")
+        .remove();
     node.append("text")
         .attr("font-size", getNodeHeight() + "px");
     node.select("text").html(function (d) { return tspanStringify(d.label, getCompLabelWidth()) });
@@ -1208,19 +1206,6 @@ function drawFMTree(fmroot) {
     // svg initialize
     d3.select("#FMTreeSVG").select("svg").remove();
 
-    // tree全体の大きさを取得
-    var left = fmroot;
-    var right = fmroot;
-    fmroot.eachBefore(function (node) {
-        if (node.x < left.x) {
-            left = node;
-        }
-        if (node.x > right.x) {
-            right = node;
-        }
-    });
-    var treeWidth = (right.x - left.x) ? (right.x - left.x) : 1;
-    console.log($("#FMTreeSVG").width());
     var zoom = d3.zoom()
         .scaleExtent([.2, 10])
         // .translateExtent(
@@ -1233,20 +1218,11 @@ function drawFMTree(fmroot) {
     }
     // treeを入れるコンテナを作成
     var svg = d3.select("#FMTreeSVG")
-        .append("svg")
         .attr("width", "100%")
         .attr("height", "100%")
         .call(zoom);
     svg.append("g")
         .attr("class", "treeContainer");
-    svg.call(zoom.transform, d3.zoomIdentity.scale(0.5));
-
-    var k = $("#FMTreeSVG").height() / treeWidth * 0.9;
-    var ty = treeWidth * k / 2;
-    if (k > 1) { k = 1; ty = $("#FMTreeSVG svg").height() / 2; }
-    svg.call(zoom.transform, d3.zoomIdentity
-        // .translate(10, ty)
-        .scale(k));
 
     // ノード間を線でつなぐ
     d3.select("#FMTreeSVG .treeContainer").selectAll(".link")
@@ -1277,10 +1253,10 @@ function drawFMTree(fmroot) {
         });
     node.append("circle")
         .attr("r", 4)
-        .attr("fill", function(d){
-            if(d.data.cat=="func"){
+        .attr("fill", function (d) {
+            if (d.data.cat == "func") {
                 return "red";
-            }else{
+            } else {
                 return "blue";
             }
         });
@@ -1289,9 +1265,26 @@ function drawFMTree(fmroot) {
             return d.data.name;
         })
         .attr("font-size", "10px");
-    console.log(fmroot);
-}
 
+    console.log(fmroot);
+
+    // 画面サイズに合わせてツリーをオフセット&スケール
+    var _is_block = true;
+    if ($("#FM-tree").css("display") == "none") {
+        _is_block = false;
+        $("#FM-tree").css("display", "block");
+    }
+    var bbox = $("#FMTreeSVG .treeContainer")[0].getBBox();
+    var k = $("#FM-tree").height() / bbox.height * 0.85;
+    k = k > 10 ? 10 : k;
+    var tx = bbox.width / 2;
+    svg.call(zoom.transform, d3.zoomIdentity
+        .translate(tx + 10, 10)
+        .scale(k));
+    if (_is_block == false) {
+        $("#FM-tree").css("display", "none");
+    }
+}
 
 // sidenavのnode editerを空にする
 function clearEditer() {
