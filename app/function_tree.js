@@ -395,14 +395,14 @@ function makeTree(dataset) {
         .attr("width", "100%")
         .attr("height", "100%")
         .call(zoom);
-    svg.append("g")
-        .attr("class", "treeContainer");
 
     // ノード間を線でつなぐ
-    d3.select("#compTreeSVG .treeContainer").selectAll(".link")
-        .data(root.descendants().slice(1))
-        .enter()
-        .append("path")
+    var link = d3.select("#compTreeSVG .treeContainer").selectAll(".link")
+        .data(root.descendants().slice(1));
+    link.exit().remove();
+    var enteredLink = link.enter()
+        .append("path");
+    enteredLink.merge(link)
         .attr("class", "link")
         .attr("fill", "none")
         .attr("stroke-width", 2)
@@ -418,10 +418,23 @@ function makeTree(dataset) {
     // ノード作成
     var node = d3.select("#compTreeSVG .treeContainer")
         .selectAll(".node")
-        .data(root.descendants())
-        .enter()
+        .data(root.descendants());
+    node.exit().remove();
+    var enteredNode = node.enter()
         .append("g");
-    drawNode(node)
+    enteredNode.append("circle")
+        .attr("r", 4)
+        .attr("fill", "teal");
+    enteredNode.append("text")
+        .attr("font-size", getNodeHeight() + "px");
+    var updatedNode = enteredNode.merge(node);
+    // ノードに円とテキストを表示
+    updatedNode.attr("class", "node")
+        .attr("transform", function (d) {
+            return "translate(" + d.y + "," + d.x + ")";
+        });
+    updatedNode.select("text").html(function (d) { return tspanStringify(d.label, getCompLabelWidth()) });
+    updatedNode.on("click", clickNode);
 
     // func-nodeをSVG描画
     // func-nodeをつなぐ線の色を設定
@@ -437,11 +450,13 @@ function makeTree(dataset) {
     };
 
     // func-nodeを線でつなぐ
-    d3.select("#compTreeSVG .treeContainer")
+    var funcLink = d3.select("#compTreeSVG .treeContainer")
         .selectAll(".funcLink")
-        .data(root.funcParentChild())
-        .enter()
-        .append("path")
+        .data(root.funcParentChild());
+    funcLink.exit().remove();
+    var enteredFuncLink = funcLink.enter()
+        .append("path");
+    enteredFuncLink.merge(funcLink)
         .attr("class", "funcLink")
         .attr("fill", "none")
         .attr("stroke", function (d) { return getLinkColor(d.child.x); })
@@ -462,27 +477,40 @@ function makeTree(dataset) {
     // func-nodeをsvgに追加
     var funcNode = d3.select('#compTreeSVG .treeContainer')
         .selectAll(".funcNode")
-        .data(root.funcDescendants())
-        .enter()
-        .append("g")
-        .attr("class", "funcNode")
+        .data(root.funcDescendants());
+    funcNode.exit().remove();
+    var enteredFuncNode = funcNode.enter()
+        .append("g");
+    enteredFuncNode.append("circle")
+        .attr("r", 3)
+        .attr("fill", "red");
+    enteredFuncNode.append("text")
+        .attr("font-size", getNodeHeight() * 0.9 + "px")
+        .attr("fill", "dimgray")
+        .attr("dominant-baseline", "middle");
+    var updatedFuncNode = enteredFuncNode.merge(funcNode);
+    // func-nodeのcircleとtextを描画
+    updatedFuncNode.attr("class", "funcNode")
         .attr("transform", function (d) {
             return "translate(" + d.y + "," + d.x + ")";
         });
-    // func-nodeのcircleとtextを描画
-    drawFuncNode(funcNode);
+    updatedFuncNode.select("text")
+        .html(function (d) { return tspanStringify(d.label, getFuncLabelWidth()) });
+    updatedFuncNode.on("click", clickFuncNode);
 
     // param-nodeを線でつなぐ
-    d3.select("#compTreeSVG .treeContainer")
+    var paramLink = d3.select("#compTreeSVG .treeContainer")
         .selectAll(".paramLink")
-        .data(root.paramParentChild())
-        .enter()
-        .append("path")
+        .data(root.paramParentChild());
+    paramLink.exit().remove();
+    var enteredParamLink = paramLink.enter()
+        .append("path");
+    enteredParamLink.merge(paramLink)
         .attr("class", "paramLink")
         .attr("fill", "none")
         .attr("stroke", function (d) { return getLinkColor(d.child.x); })
         .attr("d", function (d) {
-            if (d.child.y == d.parent.y) {  // 同じdepthの場合
+            if (d.child.icb == d.parent.isb) {  // 同じcomponentの場合
                 return "M" + d.child.y + "," + d.child.x
                     + "C" + (d.child.y - getNodeHeight() * 2) + "," + (d.child.x + d.parent.x) / 2
                     + " " + (d.child.y + getNodeHeight() * 2) + "," + d.parent.x
@@ -498,24 +526,26 @@ function makeTree(dataset) {
     // param-nodeをsvgに追加
     var paramNode = d3.select('#compTreeSVG .treeContainer')
         .selectAll(".paramNode")
-        .data(root.paramDescendants())
-        .enter()
-        .append("g")
-        .attr("class", "paramNode")
-        .attr("transform", function (d) {
-            return "translate(" + d.y + "," + d.x + ")";
-        });
-    // param-nodeのcircleとtextを描画
-    paramNode.append("circle")
+        .data(root.paramDescendants());
+    paramNode.exit().remove();
+    var enteredParamNode = paramNode.enter()
+        .append("g");
+    enteredParamNode.append("circle")
         .attr("r", 3)
         .attr("fill", "orange");
-    paramNode.append("text")
+    enteredParamNode.append("text")
         .attr("font-size", getNodeHeight() * 0.9 + "px")
         .attr("fill", "dimgray")
         .attr("dominant-baseline", "middle");
-    paramNode.select("text")
+    var updatedParamNode = enteredParamNode.merge(paramNode);
+    // param-nodeのcircleとtextを描画
+    updatedParamNode.attr("class", "paramNode")
+        .attr("transform", function (d) {
+            return "translate(" + d.y + "," + d.x + ")";
+        });
+    updatedParamNode.select("text")
         .html(function (d) { return tspanStringify(d.label, getParamLabelWidth()) });
-    paramNode.on("click", clickParamNode);
+    updatedParamNode.on("click", clickParamNode);
 
     // 画面サイズに合わせてツリーをオフセット&スケール
     var _is_block = true;
@@ -538,24 +568,6 @@ function makeTree(dataset) {
     makeFMTree(root);
 };
 
-function drawNode(node) {
-    // ノードに円とテキストを表示
-    node.attr("class", "node")
-        .attr("transform", function (d) {
-            return "translate(" + d.y + "," + d.x + ")";
-        });
-    node.select("circle")
-        .remove();
-    node.append("circle")
-        .attr("r", 4)
-        .attr("fill", "teal");
-    node.select("text")
-        .remove();
-    node.append("text")
-        .attr("font-size", getNodeHeight() + "px");
-    node.select("text").html(function (d) { return tspanStringify(d.label, getCompLabelWidth()) });
-    node.on("click", clickNode);
-}
 function tspanStringify(strArr, width) {
     var _html = "";
     strArr.forEach(function (str, index) {
@@ -862,20 +874,6 @@ function clickNode(data) {
             clickNode(perseJptr(root, _jptr));
         }
     });
-}
-
-function drawFuncNode(funcNode) {
-    // func-nodeに円とテキストを表示
-    funcNode.append("circle")
-        .attr("r", 3)
-        .attr("fill", "red");
-    funcNode.append("text")
-        .attr("font-size", getNodeHeight() * 0.9 + "px")
-        .attr("fill", "dimgray")
-        .attr("dominant-baseline", "middle");
-    funcNode.select("text")
-        .html(function (d) { return tspanStringify(d.label, getFuncLabelWidth()) });
-    funcNode.on("click", clickFuncNode);
 }
 
 // func-nodeクリック時の挙動
