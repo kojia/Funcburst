@@ -24,10 +24,10 @@
 
 	<!--navigation bar-->
 	<header>
-		<nav class="top-nav teal darken-1" id="top-nav">
+		<nav class="nav-extended teal darken-1" id="navbar">
 			<div class="nav-wrapper">
-				<!--jsonfile open form-->
-				<ul>
+				<ul id="top-nav">
+					<!--jsonfile open form-->
 					<li>
 						<form action="#">
 							<div class="file-field input-field">
@@ -65,10 +65,13 @@
 						</button>
 					</li>
 				</ul>
-			</div>
-		</nav>
+				<!--tab bar-->
+				<ul class="tabs tabs-transparent teal darken-4" id="tree-tab">
+					<li class="tab"><a href="#comp-tree">Component Tree</a></li>
+					<li class="tab"><a href="#FM-tree">Function-Means Tree</a></li>
+				</ul>
 
-		<ul id="slide-out" class="side-nav teal lighten-4" style="transform: translateX(0%);">
+				<ul id="slide-out" class="side-nav teal lighten-4" style="transform: translateX(0%);">
 <!--Component Editer-->
 <li>
 	<div id="comp-edit" class="card-panel teal lighten-3" style="display:none">
@@ -160,12 +163,21 @@
 </div>
 </li>
 </ul>
+</div>
+</nav>
 </header>
 
 <!-- SVG field-->
 <main>
-	<div class="container teal lighten-5">
-		<div id="treeSvg"> </div>
+	<div class="container teal lighten-5" id="comp-tree">
+		<svg id="compTreeSVG">
+			<g class="treeContainer"></g>
+		</svg>
+	</div>
+	<div class="container teal lighten-5" id="FM-tree">
+		<svg id="FMTreeSVG">
+			<g class="treeContainer"></g>
+		</svg>
 	</div>
 </main>
 

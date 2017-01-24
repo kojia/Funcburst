@@ -1,3 +1,4 @@
+// @licence MIT
 var dataset = makeNewComp("Root");
 makeTree(dataset);
 
@@ -8,7 +9,7 @@ $(document).ready(function () {
 
 // SVG画面サイズ調整
 $(document).ready(function () {
-    hsize = $(window).height() - $("#top-nav").height();
+    hsize = $(window).height() - ($("#top-nav").height() + $("#tree-tab").height());
     $("main").css("height", hsize + "px");
 });
 $(window).resize(function () {
@@ -61,12 +62,12 @@ $("#dataURI").click(function () {
 });
 // open svg in another window
 $("#show-svg").click(function () {
-    var svg = $("#treeSvg");
+    var svg = $("#compTreeSVG");
     var showsvg = $("<svg>");
     showsvg.attr({
         "xmlns": "http://www.w3.org/2000/svg",
-        "width": $("#treeSvg").width() * 1.1,
-        "height": $("#treeSvg").height() * 1.1
+        "width": $("#compTreeSVG").width() * 1.1,
+        "height": $("#compTreeSVG").height() * 1.1
     });
     showsvg.html(svg.html());
     window.open("data:image/svg+xml;charset=utf-8,"
@@ -100,7 +101,7 @@ function getParamLabelWidth() {
 
 function makeTree(dataset) {
     // svg initialize
-    d3.select("#treeSvg").select("svg").remove();
+    d3.select("#compTreeSVG").select("svg").remove();
 
     // hierarchy initialize
     root = d3.hierarchy(dataset, function (d) {
@@ -135,7 +136,7 @@ function makeTree(dataset) {
 
     // tree setting
     var tree = d3.tree()
-        // .size([$(window).height() - $("#top-nav").height(), $("#treeSvg").width() * 0.9])
+        // .size([$(window).height() - $("#top-nav").height(), $("#compTreeSVG").width() * 0.9])
         .nodeSize([getNodeHeight(), getNodeWidth()])
         .separation(nodeSeparate);
 
@@ -377,50 +378,31 @@ function makeTree(dataset) {
             })
             .reduce(function (a, b) { return a.concat(b); }, Array());
     }
-    // tree全体の大きさを取得
-    var left = root;
-    var right = root;
-    root.eachBefore(function (node) {
-        if (node.x < left.x) {
-            left = node;
-        }
-        if (node.x > right.x) {
-            right = node;
-        }
-    });
-    var treeWidth = (right.x - left.x) ? (right.x - left.x) : 1;
+
     // treeを入れるコンテナを作成
     var zoom = d3.zoom()
         .scaleExtent([.2, 10])
         .translateExtent(
-        [[$("#treeSvg").width() * -2, $("#treeSvg").height() * -2],
-        [$("#treeSvg").width() * 2, $("#treeSvg").height() * 2]])
+        [[$("#compTreeSVG").width() * -2, $("#compTreeSVG").height() * -2],
+        [$("#compTreeSVG").width() * 2, $("#compTreeSVG").height() * 2]])
         .on("zoom", zoomed);
     function zoomed() {
-        d3.select(".treeContainer").attr("transform", d3.event.transform);
+        d3.select("#compTreeSVG .treeContainer")
+            .attr("transform", d3.event.transform);
     }
 
-    var svg = d3.select("#treeSvg")
-        .append("svg")
+    var svg = d3.select("#compTreeSVG")
         .attr("width", "100%")
         .attr("height", "100%")
         .call(zoom);
-    svg.append("g")
-        .attr("class", "treeContainer");
-    svg.call(zoom.transform, d3.zoomIdentity.scale(0.5));
-
-    var k = $("#treeSvg").height() / treeWidth * 0.9;
-    var ty = treeWidth * k / 2;
-    if (k > 1) { k = 1; ty = $("svg").height() / 2; }
-    svg.call(zoom.transform, d3.zoomIdentity
-        .translate(10, ty)
-        .scale(k));
 
     // ノード間を線でつなぐ
-    d3.select(".treeContainer").selectAll(".link")
-        .data(root.descendants().slice(1))
-        .enter()
-        .append("path")
+    var link = d3.select("#compTreeSVG .treeContainer").selectAll(".link")
+        .data(root.descendants().slice(1));
+    link.exit().remove();
+    var enteredLink = link.enter()
+        .append("path");
+    enteredLink.merge(link)
         .attr("class", "link")
         .attr("fill", "none")
         .attr("stroke-width", 2)
@@ -434,12 +416,25 @@ function makeTree(dataset) {
         });
 
     // ノード作成
-    var node = d3.select(".treeContainer")
+    var node = d3.select("#compTreeSVG .treeContainer")
         .selectAll(".node")
-        .data(root.descendants())
-        .enter()
+        .data(root.descendants());
+    node.exit().remove();
+    var enteredNode = node.enter()
         .append("g");
-    drawNode(node)
+    enteredNode.append("circle")
+        .attr("r", 4)
+        .attr("fill", "teal");
+    enteredNode.append("text")
+        .attr("font-size", getNodeHeight() + "px");
+    var updatedNode = enteredNode.merge(node);
+    // ノードに円とテキストを表示
+    updatedNode.attr("class", "node")
+        .attr("transform", function (d) {
+            return "translate(" + d.y + "," + d.x + ")";
+        });
+    updatedNode.select("text").html(function (d) { return tspanStringify(d.label) });
+    updatedNode.on("click", clickNode);
 
     // func-nodeをSVG描画
     // func-nodeをつなぐ線の色を設定
@@ -455,10 +450,13 @@ function makeTree(dataset) {
     };
 
     // func-nodeを線でつなぐ
-    d3.select(".treeContainer").selectAll(".funcLink")
-        .data(root.funcParentChild())
-        .enter()
-        .append("path")
+    var funcLink = d3.select("#compTreeSVG .treeContainer")
+        .selectAll(".funcLink")
+        .data(root.funcParentChild());
+    funcLink.exit().remove();
+    var enteredFuncLink = funcLink.enter()
+        .append("path");
+    enteredFuncLink.merge(funcLink)
         .attr("class", "funcLink")
         .attr("fill", "none")
         .attr("stroke", function (d) { return getLinkColor(d.child.x); })
@@ -477,28 +475,42 @@ function makeTree(dataset) {
         });
 
     // func-nodeをsvgに追加
-    var funcNode = d3.select('.treeContainer')
+    var funcNode = d3.select('#compTreeSVG .treeContainer')
         .selectAll(".funcNode")
-        .data(root.funcDescendants())
-        .enter()
-        .append("g")
-        .attr("class", "funcNode")
+        .data(root.funcDescendants());
+    funcNode.exit().remove();
+    var enteredFuncNode = funcNode.enter()
+        .append("g");
+    enteredFuncNode.append("circle")
+        .attr("r", 3)
+        .attr("fill", "red");
+    enteredFuncNode.append("text")
+        .attr("font-size", getNodeHeight() * 0.9 + "px")
+        .attr("fill", "dimgray")
+        .attr("dominant-baseline", "middle");
+    var updatedFuncNode = enteredFuncNode.merge(funcNode);
+    // func-nodeのcircleとtextを描画
+    updatedFuncNode.attr("class", "funcNode")
         .attr("transform", function (d) {
             return "translate(" + d.y + "," + d.x + ")";
         });
-    // func-nodeのcircleとtextを描画
-    drawFuncNode(funcNode);
+    updatedFuncNode.select("text")
+        .html(function (d) { return tspanStringify(d.label) });
+    updatedFuncNode.on("click", clickFuncNode);
 
     // param-nodeを線でつなぐ
-    d3.select(".treeContainer").selectAll(".paramLink")
-        .data(root.paramParentChild())
-        .enter()
-        .append("path")
+    var paramLink = d3.select("#compTreeSVG .treeContainer")
+        .selectAll(".paramLink")
+        .data(root.paramParentChild());
+    paramLink.exit().remove();
+    var enteredParamLink = paramLink.enter()
+        .append("path");
+    enteredParamLink.merge(paramLink)
         .attr("class", "paramLink")
         .attr("fill", "none")
         .attr("stroke", function (d) { return getLinkColor(d.child.x); })
         .attr("d", function (d) {
-            if (d.child.y == d.parent.y) {  // 同じdepthの場合
+            if (d.child.icb == d.parent.isb) {  // 同じcomponentの場合
                 return "M" + d.child.y + "," + d.child.x
                     + "C" + (d.child.y - getNodeHeight() * 2) + "," + (d.child.x + d.parent.x) / 2
                     + " " + (d.child.y + getNodeHeight() * 2) + "," + d.parent.x
@@ -512,47 +524,51 @@ function makeTree(dataset) {
         });
 
     // param-nodeをsvgに追加
-    var paramNode = d3.select('.treeContainer')
+    var paramNode = d3.select('#compTreeSVG .treeContainer')
         .selectAll(".paramNode")
-        .data(root.paramDescendants())
-        .enter()
-        .append("g")
-        .attr("class", "paramNode")
-        .attr("transform", function (d) {
-            return "translate(" + d.y + "," + d.x + ")";
-        });
-    // param-nodeのcircleとtextを描画
-    paramNode.append("circle")
+        .data(root.paramDescendants());
+    paramNode.exit().remove();
+    var enteredParamNode = paramNode.enter()
+        .append("g");
+    enteredParamNode.append("circle")
         .attr("r", 3)
         .attr("fill", "orange");
-    paramNode.append("text")
+    enteredParamNode.append("text")
         .attr("font-size", getNodeHeight() * 0.9 + "px")
         .attr("fill", "dimgray")
         .attr("dominant-baseline", "middle");
-    paramNode.select("text")
-        .html(function (d) { return tspanStringify(d.label, getParamLabelWidth()) });
-    paramNode.on("click", clickParamNode);
-};
-
-function drawNode(node) {
-    // ノードに円とテキストを表示
-    node.attr("class", "node")
+    var updatedParamNode = enteredParamNode.merge(paramNode);
+    // param-nodeのcircleとtextを描画
+    updatedParamNode.attr("class", "paramNode")
         .attr("transform", function (d) {
             return "translate(" + d.y + "," + d.x + ")";
         });
-    // node.select("circle")
-    //     .remove();
-    node.append("circle")
-        .attr("r", 4)
-        .attr("fill", "teal");
-    // node.select("text")
-    //     .remove();
-    node.append("text")
-        .attr("font-size", getNodeHeight() + "px");
-    node.select("text").html(function (d) { return tspanStringify(d.label, getCompLabelWidth()) });
-    node.on("click", clickNode);
-}
-function tspanStringify(strArr, width) {
+    updatedParamNode.select("text")
+        .html(function (d) { return tspanStringify(d.label) });
+    updatedParamNode.on("click", clickParamNode);
+
+    // 画面サイズに合わせてツリーをオフセット&スケール
+    var _is_block = true;
+    if ($("#comp-tree").css("display") == "none") {
+        _is_block = false;
+        $("#comp-tree").css("display", "block");
+    }
+    var bbox = $("#compTreeSVG .treeContainer")[0].getBBox();
+    var k = $("#comp-tree").height() / bbox.height * 0.85;
+    k = k > 10 ? 10 : k;
+    var ty = bbox.height / 2;
+    ty = ty < 150 ? 150 : ty;
+    svg.call(zoom.transform, d3.zoomIdentity
+        .translate(10, ty + 10)
+        .scale(k));
+    if (_is_block == false) {
+        $("#comp-tree").css("display", "none");
+    }
+
+    makeFMTree(root);
+};
+
+function tspanStringify(strArr) {
     var _html = "";
     strArr.forEach(function (str, index) {
         _html += '<tspan class="line' + index + '"' + 'y="' + index + 'em" x="0em">'
@@ -869,20 +885,6 @@ function clickNode(data) {
     });
 }
 
-function drawFuncNode(funcNode) {
-    // func-nodeに円とテキストを表示
-    funcNode.append("circle")
-        .attr("r", 3)
-        .attr("fill", "red");
-    funcNode.append("text")
-        .attr("font-size", getNodeHeight() * 0.9 + "px")
-        .attr("fill", "dimgray")
-        .attr("dominant-baseline", "middle");
-    funcNode.select("text")
-        .html(function (d) { return tspanStringify(d.label, getFuncLabelWidth()) });
-    funcNode.on("click", clickFuncNode);
-}
-
 // func-nodeクリック時の挙動
 function clickFuncNode(data) {
     console.log(data);
@@ -1147,6 +1149,176 @@ function clickParamNode(data) {
             makeTree(dataset);
         }
     });
+}
+
+// perse function means tree from component tree
+function makeFMTree(root) {
+    var fmData = {
+        "fmcat": "root",
+        "children": [],
+        "node": { "data": { "name": "Customer" } }
+    };
+    var setFMchild = function (node) {
+        if (node.children === undefined) {
+            return Array();
+        } else {
+            return node.children
+                .filter(function (child) {
+                    return child.isb != undefined;
+                })
+                .map(function (child) {
+                    return {
+                        "fmcat": "func",
+                        "node": child,
+                        "children": [{
+                            "fmcat": "means",
+                            "node": child.isb,
+                            "children": setFMchild(child),
+                            "param": child.param == undefined ? [] :
+                                child.param
+                        }]
+                    }
+                })
+        }
+    }
+    root.func.forEach(function (fnode) {
+        fmData.children.push({
+            "fmcat": "func",
+            "node": fnode,
+            "children": [{
+                "fmcat": "means",
+                "node": root,
+                "children": setFMchild(fnode),
+                "param": fnode.children == undefined ? [] :
+                    fnode.children.filter(function (e) {
+                        return e.isb === undefined;
+                    })
+            }]
+        })
+    });
+
+    // hierarchy initialize
+    fmroot = d3.hierarchy(fmData, function (d) {
+        return d["children"];
+    })
+
+    // set label, node, and data
+    fmroot.eachBefore(function (fmnode) {
+        fmnode.cnode = fmnode.data.node;
+        fmnode.cdata = fmnode.data.node.data;
+        fmnode.label = splitStrByWidth(
+            fmnode.cdata.name, getFMLabelWidth());
+        // set parameter node
+        if (fmnode.data.fmcat == "means") {
+            fmnode.param = fmnode.data.param
+                .map(function (d) {
+                    return {
+                        "cnode": d,
+                        "cdata": d.data,
+                        "label": splitStrByWidth(d.data.name, getFMLabelWidth())
+                    };
+                });
+        }
+    })
+
+    //tree setting
+    var tree = d3.tree()
+        .nodeSize([getFMNodeHeight(), getFMNodeWidth()]);
+    // create tree layout
+    tree(fmroot);
+    // draw tree
+    drawFMTree(fmroot);
+}
+
+function getFMNodeHeight() {
+    return 15;
+}
+function getFMNodeWidth() {
+    return 150;
+}
+function getFMLabelWidth() {
+    return getFMNodeWidth() - 20;
+}
+
+function drawFMTree(fmroot) {
+    // svg initialize
+    d3.select("#FMTreeSVG").select("svg").remove();
+
+    var zoom = d3.zoom()
+        .scaleExtent([.2, 10])
+        // .translateExtent(
+        // [[$("#FMTreeSVG").height() * -2, $("#FMTreeSVG").width() * -2],
+        // [$("#FMTreeSVG").height() * 2, $("#FMTreeSVG").width() * 2]])
+        .on("zoom", zoomed);
+    function zoomed() {
+        d3.select("#FMTreeSVG .treeContainer")
+            .attr("transform", d3.event.transform);
+    }
+    // treeを入れるコンテナを作成
+    var svg = d3.select("#FMTreeSVG")
+        .attr("width", "100%")
+        .attr("height", "100%")
+        .call(zoom);
+    svg.append("g")
+        .attr("class", "treeContainer");
+
+    // ノード間を線でつなぐ
+    d3.select("#FMTreeSVG .treeContainer").selectAll(".link")
+        .data(fmroot.descendants().slice(1))
+        .enter()
+        .append("path")
+        .attr("class", "link")
+        .attr("fill", "none")
+        .attr("stroke-width", 2)
+        .attr("stroke-dasharray", [2, 1])
+        .attr("stroke", "gray")
+        .attr("d", function (d) {
+            return "M" + d.y + "," + d.x
+                + "C" + (d.y + d.parent.y) / 2 + "," + d.x
+                + " " + (d.y + d.parent.y) / 2 + "," + d.parent.x
+                + " " + d.parent.y + "," + d.parent.x;
+        });
+
+    // ノード作成
+    var node = d3.select("#FMTreeSVG .treeContainer")
+        .selectAll(".node")
+        .data(fmroot.descendants())
+        .enter()
+        .append("g")
+        .attr("class", "node")
+        .attr("transform", function (d) {
+            return "translate(" + d.y + "," + d.x + ")";
+        });
+    node.append("circle")
+        .attr("r", 4)
+        .attr("fill", function (d) {
+            if (d.data.fmcat == "func") {
+                return "red";
+            } else {
+                return "teal";
+            }
+        });
+    node.append("text")
+        .html(function(d){return tspanStringify(d.label);})
+        .attr("font-size", getFMNodeHeight());
+
+    console.log(fmroot);
+
+    // 画面サイズに合わせてツリーをオフセット&スケール
+    var _is_block = true;
+    if ($("#FM-tree").css("display") == "none") {
+        _is_block = false;
+        $("#FM-tree").css("display", "block");
+    }
+    var bbox = $("#FMTreeSVG .treeContainer")[0].getBBox();
+    var k = $("#FM-tree").height() / bbox.height * 0.85;
+    k = k > 10 ? 10 : k;
+    svg.call(zoom.transform, d3.zoomIdentity
+        .translate(50, 10)
+        .scale(k));
+    if (_is_block == false) {
+        $("#FM-tree").css("display", "none");
+    }
 }
 
 // sidenavのnode editerを空にする
