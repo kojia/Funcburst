@@ -333,8 +333,8 @@ function makeTree(dataset) {
                 return perseJptr(root, p);
             });
             // set child for parent func-node that is set above
-            paramElm.parents.forEach(function (paramPrnt){
-                if(paramPrnt.children === undefined) {
+            paramElm.parents.forEach(function (paramPrnt) {
+                if (paramPrnt.children === undefined) {
                     paramPrnt.children = Array();
                 }
                 paramPrnt.children.push(paramElm);
@@ -651,14 +651,17 @@ function clickNode(data) {
             var item = evt.item;
             var ctrl = evt.target;
             if (Sortable.utils.is(ctrl, ".js-remove")) {  // Click on remove button
-                item.parentNode.removeChild(item); // remove sortable item
-                // 子Nodeの削除
-                data.data.children.splice(evt.oldIndex - 1, 1);
-                // 子Node削除によりjson pointerが繰り上がる
-                var _jptr = data == root ? "" : getJptr(data);
-                _jptr += "/children/" + String(evt.oldIndex - 1);
-                delJptr(data, _jptr)
-                makeTree(dataset);
+                var _del = function () {
+                    item.parentNode.removeChild(item); // remove sortable item
+                    // 子Nodeの削除
+                    data.data.children.splice(evt.oldIndex - 1, 1);
+                    // 子Node削除によりjson pointerが繰り上がる
+                    var _jptr = data == root ? "" : getJptr(data);
+                    _jptr += "/children/" + String(evt.oldIndex - 1);
+                    delJptr(data, _jptr)
+                    makeTree(dataset);
+                }
+                confirmDelNode(data.data.children[evt.oldIndex - 1].name, _del);
             }
         },
         // drag後の処理
@@ -741,16 +744,19 @@ function clickNode(data) {
             var item = evt.item;
             var ctrl = evt.target;
             if (Sortable.utils.is(ctrl, ".js-remove")) {  // Click on remove button
-                item.parentNode.removeChild(item); // remove sortable item
-                // dataから削除
-                data.data.func.splice(evt.oldIndex - 1, 1);
-                // 削除したfunc-nodeを親としているjson pointerを削除
-                var _jptr = getJptr(data) + "/func/" + String(evt.oldIndex - 1);
-                delJptr(data, _jptr);
-                // データ再構築
-                var _jptr = getJptr(data);
-                makeTree(dataset);
-                clickNode(perseJptr(root, _jptr));
+                var _del = function () {
+                    item.parentNode.removeChild(item); // remove sortable item
+                    // dataから削除
+                    data.data.func.splice(evt.oldIndex - 1, 1);
+                    // 削除したfunc-nodeを親としているjson pointerを削除
+                    var _jptr = getJptr(data) + "/func/" + String(evt.oldIndex - 1);
+                    delJptr(data, _jptr);
+                    // データ再構築
+                    var _jptr = getJptr(data);
+                    makeTree(dataset);
+                    clickNode(perseJptr(root, _jptr));
+                }
+                confirmDelNode(data.data.func[evt.oldIndex - 1].name, _del);
             }
         },
         // drag後の処理
@@ -833,13 +839,16 @@ function clickNode(data) {
             var item = evt.item;
             var ctrl = evt.target;
             if (Sortable.utils.is(ctrl, ".js-remove")) {  // Click on remove button
-                item.parentNode.removeChild(item); // remove sortable item
-                // dataから削除
-                data.data.param.splice(evt.oldIndex - 1, 1);
-                // データ再構築
-                var _jptr = getJptr(data);
-                makeTree(dataset);
-                clickNode(perseJptr(root, _jptr));
+                var _del = function () {
+                    item.parentNode.removeChild(item); // remove sortable item
+                    // dataから削除
+                    data.data.param.splice(evt.oldIndex - 1, 1);
+                    // データ再構築
+                    var _jptr = getJptr(data);
+                    makeTree(dataset);
+                    clickNode(perseJptr(root, _jptr));
+                }
+                confirmDelNode(data.data.param[evt.oldIndex - 1].name, _del);
             }
         },
         // drag後の処理
@@ -1332,4 +1341,13 @@ function setEditPane(type = undefined) {
         d3.select("#param-edit")
             .style("display", "none");
     }
+}
+
+// confirm before delete node
+function confirmDelNode(name, f) {
+    $("#modal-remove-confirm .modal-content h4")
+        .text('Are you sure you want to delete "' + name + '"');
+    $("#modal-remove-confirm").modal("open");
+    d3.select("#modal-remove-confirm a")
+        .on("click", f)
 }
