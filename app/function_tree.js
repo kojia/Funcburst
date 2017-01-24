@@ -601,9 +601,7 @@ function clickNode(data) {
     enteredPrnt.append("input");
     enteredPrnt.merge(prnt)  // 内容更新
         .attr("class", "collection-item")
-        .select("input")
-        .attr("type", "text")
-        .attr("value", function (d) { return d === null ? "no parent" : d.data.name; });
+        .text(function (d) { return d === null ? "no parent" : d.data.name; });
     // bind children
     var cldrn = d3.select("#comp-children")
         .selectAll("li.collection-item")
