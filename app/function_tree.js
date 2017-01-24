@@ -433,7 +433,7 @@ function makeTree(dataset) {
         .attr("transform", function (d) {
             return "translate(" + d.y + "," + d.x + ")";
         });
-    updatedNode.select("text").html(function (d) { return tspanStringify(d.label, getCompLabelWidth()) });
+    updatedNode.select("text").html(function (d) { return tspanStringify(d.label) });
     updatedNode.on("click", clickNode);
 
     // func-nodeをSVG描画
@@ -495,7 +495,7 @@ function makeTree(dataset) {
             return "translate(" + d.y + "," + d.x + ")";
         });
     updatedFuncNode.select("text")
-        .html(function (d) { return tspanStringify(d.label, getFuncLabelWidth()) });
+        .html(function (d) { return tspanStringify(d.label) });
     updatedFuncNode.on("click", clickFuncNode);
 
     // param-nodeを線でつなぐ
@@ -544,7 +544,7 @@ function makeTree(dataset) {
             return "translate(" + d.y + "," + d.x + ")";
         });
     updatedParamNode.select("text")
-        .html(function (d) { return tspanStringify(d.label, getParamLabelWidth()) });
+        .html(function (d) { return tspanStringify(d.label) });
     updatedParamNode.on("click", clickParamNode);
 
     // 画面サイズに合わせてツリーをオフセット&スケール
@@ -568,7 +568,7 @@ function makeTree(dataset) {
     makeFMTree(root);
 };
 
-function tspanStringify(strArr, width) {
+function tspanStringify(strArr) {
     var _html = "";
     strArr.forEach(function (str, index) {
         _html += '<tspan class="line' + index + '"' + 'y="' + index + 'em" x="0em">'
@@ -1145,9 +1145,9 @@ function clickParamNode(data) {
 // perse function means tree from component tree
 function makeFMTree(root) {
     var fmData = {
-        "name": "Customer",
-        "cat": "root",
-        "children": []
+        "fmcat": "root",
+        "children": [],
+        "node": { "data": { "name": "Customer" } }
     };
     var setFMchild = function (node) {
         if (node.children === undefined) {
@@ -1159,29 +1159,31 @@ function makeFMTree(root) {
                 })
                 .map(function (child) {
                     return {
-                        "cat": "func",
+                        "fmcat": "func",
                         "node": child,
-                        "name": child.data.name,
                         "children": [{
-                            "cat": "means",
+                            "fmcat": "means",
                             "node": child.isb,
-                            "name": child.isb.data.name,
-                            "children": setFMchild(child)
+                            "children": setFMchild(child),
+                            "param": child.param == undefined ? [] :
+                                child.param
                         }]
                     }
                 })
         }
     }
-    root.func.forEach(function (node) {
+    root.func.forEach(function (fnode) {
         fmData.children.push({
-            "cat": "func",
-            "node": node,
-            "name": node.data.name,
+            "fmcat": "func",
+            "node": fnode,
             "children": [{
-                "cat": "means",
+                "fmcat": "means",
                 "node": root,
-                "name": root.data.name,
-                "children": setFMchild(node)
+                "children": setFMchild(fnode),
+                "param": fnode.children == undefined ? [] :
+                    fnode.children.filter(function (e) {
+                        return e.isb === undefined;
+                    })
             }]
         })
     });
@@ -1191,23 +1193,42 @@ function makeFMTree(root) {
         return d["children"];
     })
 
+    // set label, node, and data
+    fmroot.eachBefore(function (fmnode) {
+        fmnode.cnode = fmnode.data.node;
+        fmnode.cdata = fmnode.data.node.data;
+        fmnode.label = splitStrByWidth(
+            fmnode.cdata.name, getFMLabelWidth());
+        // set parameter node
+        if (fmnode.data.fmcat == "means") {
+            fmnode.param = fmnode.data.param
+                .map(function (d) {
+                    return {
+                        "cnode": d,
+                        "cdata": d.data,
+                        "label": splitStrByWidth(d.data.name, getFMLabelWidth())
+                    };
+                });
+        }
+    })
+
     //tree setting
     var tree = d3.tree()
-        .nodeSize([getFMNodeWidth(), getFMNodeHeight()]);
+        .nodeSize([getFMNodeHeight(), getFMNodeWidth()]);
     // create tree layout
     tree(fmroot);
     // draw tree
     drawFMTree(fmroot);
 }
 
-function getFMNodeHeight(){
-    return 70;
-}
-function getFMNodeWidth(){
-    return 100;
-}
-function getFMNodeFontSize(){
+function getFMNodeHeight() {
     return 15;
+}
+function getFMNodeWidth() {
+    return 150;
+}
+function getFMLabelWidth() {
+    return getFMNodeWidth() - 20;
 }
 
 function drawFMTree(fmroot) {
@@ -1243,10 +1264,10 @@ function drawFMTree(fmroot) {
         .attr("stroke-dasharray", [2, 1])
         .attr("stroke", "gray")
         .attr("d", function (d) {
-            return "M" + d.x + "," + d.y
-                + "C" + (d.x + d.parent.x) / 2 + "," + d.y
-                + " " + (d.x + d.parent.x) / 2 + "," + d.parent.y
-                + " " + d.parent.x + "," + d.parent.y;
+            return "M" + d.y + "," + d.x
+                + "C" + (d.y + d.parent.y) / 2 + "," + d.x
+                + " " + (d.y + d.parent.y) / 2 + "," + d.parent.x
+                + " " + d.parent.y + "," + d.parent.x;
         });
 
     // ノード作成
@@ -1257,22 +1278,20 @@ function drawFMTree(fmroot) {
         .append("g")
         .attr("class", "node")
         .attr("transform", function (d) {
-            return "translate(" + d.x + "," + d.y + ")";
+            return "translate(" + d.y + "," + d.x + ")";
         });
     node.append("circle")
         .attr("r", 4)
         .attr("fill", function (d) {
-            if (d.data.cat == "func") {
+            if (d.data.fmcat == "func") {
                 return "red";
             } else {
-                return "blue";
+                return "teal";
             }
         });
     node.append("text")
-        .text(function (d) {
-            return d.data.name;
-        })
-        .attr("font-size", getFMNodeFontSize());
+        .html(function(d){return tspanStringify(d.label);})
+        .attr("font-size", getFMNodeHeight());
 
     console.log(fmroot);
 
