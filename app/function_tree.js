@@ -34,6 +34,7 @@ $(document).ready(function () {
                 alert("error: Invalid Data");
             }
             makeTree(dataset);
+            setEditPane();
         };
         // Textとしてファイルを読み込む
         reader.readAsText(file);
