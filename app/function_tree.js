@@ -583,6 +583,7 @@ function clickNode(node) {
     console.log(node);
 
     setEditPane("comp");
+    highlightNode(node);
 
     // bind name
     document.compName.reset();  // reset form
@@ -657,7 +658,7 @@ function clickNode(node) {
                 var newIndex = prnt.data.children === undefined ? 0 : prnt.data.children.length;
                 var newPtr = getJptr(prnt) + "/children/" + newIndex;
                 swapJptr(node, oldPtr, newPtr);
-                if(prnt.data.children === undefined){
+                if (prnt.data.children === undefined) {
                     prnt.data.children = Array();
                 }
                 prnt.data.children.push(node.data);
@@ -951,24 +952,25 @@ function clickNode(node) {
 }
 
 // func-nodeクリック時の挙動
-function clickFuncNode(data) {
-    console.log(data);
+function clickFuncNode(node) {
+    console.log(node);
 
     setEditPane("func");
+    highlightNode(node);
 
     // bind name
     document.funcName.reset();  // reset form
     d3.select("#func-edit #funcName")
-        .attr("value", data.data.name)
+        .attr("value", node.data.name)
         .on("change", function () {
-            data.data.name = d3.event.target.value;
+            node.data.name = d3.event.target.value;
             makeTree(dataset);
         });
 
     // bind comp-node which func is solved by (isb)
     var isb = d3.select("#func-isb")
         .selectAll("li.collection-item")
-        .data(function () { return data.isb ? [data.isb] : []; });
+        .data(function () { return node.isb ? [node.isb] : []; });
     isb.exit().remove();
     var enteredIsb = isb.enter()
         .append("li");
@@ -981,7 +983,7 @@ function clickFuncNode(data) {
         .remove();  // 以前に作成したaddボタンを削除
     var prnt = d3.select("#func-parents")
         .selectAll("li.collection-item")
-        .data(function () { return data.parents ? data.parents : []; });
+        .data(function () { return node.parents ? node.parents : []; });
     prnt.exit().remove();  // 減った要素を削除
     var enteredPrnt = prnt.enter()  // 増えた要素を追加
         .append("li")
@@ -1003,12 +1005,12 @@ function clickFuncNode(data) {
     // behavior when add-parent button is clicked 
     addParentBtn.on("click", function () {
         // 選択されているfuncとisb関係にあるcomp-nodeのancestorにあるfuncを探索
-        var addiable = data.isb.ancestors()
-            .reduce(function (pre, node) {
-                return pre.concat(node.func);
+        var addiable = node.isb.ancestors()
+            .reduce(function (pre, _node) {
+                return pre.concat(_node.func);
             }, Array())
             .filter(function (elm) {
-                if (elm == data || data.parents.indexOf(elm) != -1) {
+                if (elm == node || node.parents.indexOf(elm) != -1) {
                     return false;
                 }
                 return true;
@@ -1039,11 +1041,11 @@ function clickFuncNode(data) {
         margedPrnt.on("click", function (prnt) {
             var _ptr = getJptr(prnt.isb,
                 "/func/" + prnt.isb.func.indexOf(prnt));
-            data.data.parents.push(_ptr);
+            node.data.parents.push(_ptr);
             // データ再構築
             $("#side-add-func-parent").sideNav("hide");
-            var _jptr = getJptr(data.isb,
-                "/func/" + data.isb.func.indexOf(data));
+            var _jptr = getJptr(node.isb,
+                "/func/" + node.isb.func.indexOf(node));
             makeTree(dataset);
             clickFuncNode(perseJptr(root, _jptr));
         });
@@ -1061,7 +1063,7 @@ function clickFuncNode(data) {
             if (Sortable.utils.is(ctrl, ".js-remove")) {  // Click on remove button
                 item.parentNode.removeChild(item); // remove sortable item
                 // 子要素の削除
-                data.data.parents.splice(evt.oldIndex - 1, 1);
+                node.data.parents.splice(evt.oldIndex - 1, 1);
                 makeTree(dataset);
             }
         },
@@ -1069,9 +1071,9 @@ function clickFuncNode(data) {
         onUpdate: function (evt) {
             var _old = evt.oldIndex;
             var _new = evt.newIndex;
-            var _oldPrnt = data.data.parents[_old - 1];
-            data.data.parents[_old - 1] = data.data.parents[_new - 1];
-            data.data.parents[_new - 1] = _oldPrnt;
+            var _oldPrnt = node.data.parents[_old - 1];
+            node.data.parents[_old - 1] = node.data.parents[_new - 1];
+            node.data.parents[_new - 1] = _oldPrnt;
             // データ再構築
             makeTree(dataset);
         }
@@ -1079,7 +1081,7 @@ function clickFuncNode(data) {
 
     var cldrn = d3.select("#func-children")
         .selectAll("li.collection-item")
-        .data(function () { return data.children ? data.children : []; });
+        .data(function () { return node.children ? node.children : []; });
     cldrn.exit().remove();
     var enteredCldrn = cldrn.enter()
         .append("li");
@@ -1089,24 +1091,25 @@ function clickFuncNode(data) {
 }
 
 // param-nodeクリック時の挙動
-function clickParamNode(data) {
-    console.log(data);
+function clickParamNode(node) {
+    console.log(node);
 
     setEditPane("param")
+    highlightNode(node);
 
     // bind definition of parameter
     document.paramName.reset();  // reset form
     d3.select("#paramName")
-        .attr("value", data.data.name)
+        .attr("value", node.data.name)
         .on("change", function () {
-            data.data.name = d3.event.target.value;
+            node.data.name = d3.event.target.value;
             makeTree(dataset);
         });
 
     // bind comp-node which parameter is constrained by (icb)
     var icb = d3.select("#param-icb")
         .selectAll("li.collection-item")
-        .data(function () { return data.icb ? [data.icb] : []; });
+        .data(function () { return node.icb ? [node.icb] : []; });
     icb.exit().remove();
     var enteredIcb = icb.enter()
         .append("li");
@@ -1119,7 +1122,7 @@ function clickParamNode(data) {
         .remove();  // 以前に作成したaddボタンを削除
     var prnt = d3.select("#param-parents")
         .selectAll("li.collection-item")
-        .data(function () { return data.parents ? data.parents : []; });
+        .data(function () { return node.parents ? node.parents : []; });
     prnt.exit().remove();  // 減った要素を削除
     var enteredPrnt = prnt.enter()  // 増えた要素を追加
         .append("li")
@@ -1141,12 +1144,12 @@ function clickParamNode(data) {
     // behavior when add-parent button is clicked 
     addParentBtn.on("click", function () {
         // 選択されているparamとicb関係にあるcomp-nodeのancestorにあるfuncを探索
-        var addiable = data.icb.ancestors()
-            .reduce(function (pre, node) {
-                return pre.concat(node.func);
+        var addiable = node.icb.ancestors()
+            .reduce(function (pre, _node) {
+                return pre.concat(_node.func);
             }, Array())
             .filter(function (elm) {
-                if (elm == data || data.parents.indexOf(elm) != -1) {
+                if (elm == node || node.parents.indexOf(elm) != -1) {
                     return false;
                 }
                 return true;
@@ -1177,11 +1180,11 @@ function clickParamNode(data) {
         margedPrnt.on("click", function (prnt) {
             var prntPtr = getJptr(prnt.isb,
                 "/func/" + prnt.isb.func.indexOf(prnt));
-            data.data.parents.push(prntPtr);
+            node.data.parents.push(prntPtr);
             // データ再構築
             $("#side-func-parent").sideNav("hide");
-            var thisPtr = getJptr(data.icb,
-                "/param/" + data.icb.param.indexOf(data));
+            var thisPtr = getJptr(node.icb,
+                "/param/" + node.icb.param.indexOf(node));
             makeTree(dataset);
             clickParamNode(perseJptr(root, thisPtr));
         });
@@ -1199,7 +1202,7 @@ function clickParamNode(data) {
             if (Sortable.utils.is(ctrl, ".js-remove")) {  // Click on remove button
                 item.parentNode.removeChild(item); // remove sortable item
                 // 子要素の削除
-                data.data.parents.splice(evt.oldIndex - 1, 1);
+                node.data.parents.splice(evt.oldIndex - 1, 1);
                 makeTree(dataset);
             }
         },
@@ -1207,9 +1210,9 @@ function clickParamNode(data) {
         onUpdate: function (evt) {
             var _old = evt.oldIndex;
             var _new = evt.newIndex;
-            var _oldPrnt = data.data.parents[_old - 1];
-            data.data.parents[_old - 1] = data.data.parents[_new - 1];
-            data.data.parents[_new - 1] = _oldPrnt;
+            var _oldPrnt = node.data.parents[_old - 1];
+            node.data.parents[_old - 1] = node.data.parents[_new - 1];
+            node.data.parents[_new - 1] = _oldPrnt;
             // データ再構築
             makeTree(dataset);
         }
@@ -1587,4 +1590,17 @@ function confirmDelNode(name, f) {
     $("#modal-remove-confirm").modal("open");
     d3.select("#modal-remove-confirm a")
         .on("click", f)
+}
+
+
+// show background fill of selected node in svg
+function highlightNode(node) {
+    d3.select("#compTreeSVG .highlight")
+        .selectAll("rect").remove();
+    if (node === undefined) { return; }
+    d3.select("#compTreeSVG .highlight")
+        .attr("transform", "translate(" + node.y + "," + node.x + ")")
+        .append("rect")
+        .attr("x", 0).attr("y", -5).attr("width", 120).attr("height", 10)
+        .attr("fill", "#64ffda");
 }
