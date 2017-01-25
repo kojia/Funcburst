@@ -605,7 +605,9 @@ function clickNode(node) {
     // change component parent
     d3.select("#btn-change-comp-parent")
         .on("click", function () {
-            var prnts = [];
+            d3.select("#nav-change-comp-parent .collection-header")
+                .text('Select Parent of "' + node.data.name + '"');
+            var prnts = []; // parent候補
             var dataPtr = getJptr(node);
             var dataPtrRe = RegExp("^" + dataPtr);
             root.eachBefore(function (node) {
@@ -625,7 +627,7 @@ function clickNode(node) {
                 .attr("class", "collection-item");
             enteredPrnt.append("div");
             var margedPrnt = enteredPrnt.merge(prnt);
-            // show addiable func-node
+            // show addiable component
             margedPrnt
                 .classed("disabled", function (d) {
                     return d == node.parent ? true : false;
