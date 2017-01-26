@@ -1402,10 +1402,13 @@ function drawFMTree(fmroot) {
         $("#FM-tree").css("display", "block");
     }
     var bbox = $("#FMTreeSVG .treeContainer")[0].getBBox();
-    var k = $("#FM-tree").height() / bbox.height * 0.85;
-    k = k > 10 ? 10 : k;
+    var ky = $("#FM-tree").height() / bbox.height * 0.9;
+    var kx = $("#FM-tree").width() / bbox.width * 0.9;
+    var k = ky > kx ? kx : ky;
+    var ty = bbox.height / 2;
+    ty = ty < 150 ? 150 : ty;
     svg.call(zoom.transform, d3.zoomIdentity
-        .translate(50, 10)
+        .translate(10, ty + 10)
         .scale(k));
     if (_is_block == false) {
         $("#FM-tree").css("display", "none");
