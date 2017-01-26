@@ -81,6 +81,7 @@ $("#reload").click(function () {
     d3.select("#func-edit")
         .style("display", "none");
     makeTree(dataset);
+    setEditPane();
 })
 
 function getNodeHeight() {
