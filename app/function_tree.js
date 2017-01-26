@@ -1389,14 +1389,6 @@ function drawFMTree(fmroot) {
     }
 }
 
-// sidenavのnode editerを空にする
-function clearEditer() {
-    d3.select("#func-edit")
-        .style("display", "none");
-    d3.select("#comp-edit")
-        .style("display", "none");
-}
-
 // create dictionary of new component node
 function makeNewComp(name) {
     var dic = {};
@@ -1560,6 +1552,7 @@ function splitStrByWidth(str, width) {
 // arg: str type: "comp", "func", "param"
 // if argument is not given, edit pane is cleared.
 function setEditPane(type = undefined) {
+    highlightNode();
     if (type === "comp") {
         d3.select("#comp-edit")
             .style("display", "block");
