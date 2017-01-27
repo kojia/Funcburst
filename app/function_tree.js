@@ -1098,18 +1098,20 @@ function makeFMTree(root) {
         } else {
             return node.children
                 .filter(function (child) {
-                    return child.isb != undefined;
+                    return child.isb !== undefined;
                 })
-                .map(function (child) {
+                .map(function (childfunc) {
                     return {
                         "fmcat": "func",
-                        "node": child,
+                        "node": childfunc,
                         "children": [{
                             "fmcat": "means",
-                            "node": child.isb,
-                            "children": setFMchild(child),
-                            "param": child.param == undefined ? [] :
-                                child.param
+                            "node": childfunc.isb,
+                            "children": setFMchild(childfunc),
+                            "param": childfunc.children == undefined ? [] :
+                                childfunc.children.filter(function (e) {
+                                    return e.isb === undefined;
+                                })
                         }]
                     }
                 })
@@ -1157,9 +1159,23 @@ function makeFMTree(root) {
 
     //tree setting
     var tree = d3.tree()
-        .nodeSize([getFMNodeHeight(), getFMNodeWidth()]);
+        .nodeSize([getFMNodeHeight(), getFMNodeWidth()])
+        .separation(separate(function (node) {
+            return node.param === undefined ? [] : node.param;
+        }));
     // create tree layout
     tree(fmroot);
+    // set coordinate of param node
+    var kx = getNodeHeight(); // labelの並列方向単位長
+    fmroot.each(function (node) {
+        if (node.data.fmcat != "means") return;
+        var lineOffset = node.label.length;
+        node.param.forEach(function (p, i, arr) {
+            arr[i].x = node.x + kx * lineOffset;
+            arr[i].y = node.y - getFMNodeWidth() / 4;
+            lineOffset += p.label.length;
+        })
+    });
     // draw tree
     drawFMTree(fmroot);
 }
@@ -1197,10 +1213,12 @@ function drawFMTree(fmroot) {
         .attr("class", "treeContainer");
 
     // ノード間を線でつなぐ
-    d3.select("#FMTreeSVG .treeContainer").selectAll(".link")
-        .data(fmroot.descendants().slice(1))
-        .enter()
-        .append("path")
+    var link = d3.select("#FMTreeSVG .treeContainer").selectAll(".link")
+        .data(fmroot.descendants().slice(1));
+    link.exit().remove();
+    var enteredLink = link.enter()
+        .append("path");
+    enteredLink.merge(link)
         .attr("class", "link")
         .attr("fill", "none")
         .attr("stroke-width", 2)
@@ -1216,14 +1234,19 @@ function drawFMTree(fmroot) {
     // ノード作成
     var node = d3.select("#FMTreeSVG .treeContainer")
         .selectAll(".node")
-        .data(fmroot.descendants())
-        .enter()
-        .append("g")
-        .attr("class", "node")
+        .data(fmroot.descendants());
+    node.exit().remove();
+    var enteredNode = node.enter()
+        .append("g");
+    enteredNode.append("circle");
+    enteredNode.append("text")
+        .attr("font-size", getFMNodeHeight() + "px");
+    var updatedNode = enteredNode.merge(node);
+    updatedNode.attr("class", "node")
         .attr("transform", function (d) {
             return "translate(" + d.y + "," + d.x + ")";
         });
-    node.append("circle")
+    updatedNode.select("circle")
         .attr("r", 4)
         .attr("fill", function (d) {
             if (d.data.fmcat == "func") {
@@ -1232,9 +1255,31 @@ function drawFMTree(fmroot) {
                 return "teal";
             }
         });
-    node.append("text")
-        .html(function (d) { return tspanStringify(d.label); })
-        .attr("font-size", getFMNodeHeight());
+    updatedNode.select("text")
+        .html(function (d) { return tspanStringify(d.label); });
+    // draw parameter node 
+    var paramData = fmroot.descendants()
+        .filter(function (d) { return d.data.fmcat === "means" })
+        .reduce(function (a, b) { return a.concat(b.param); }, Array());
+    var param = d3.select("#FMTreeSVG .treeContainer")
+        .selectAll(".paramNode")
+        .data(paramData);
+    param.exit().remove();
+    var enteredParam = param.enter()
+        .append("g");
+    enteredParam.append("circle");
+    enteredParam.append("text")
+        .attr("font-size", getFMNodeHeight() * 0.8 + "px");
+    var updatedParam = enteredParam.merge(param);
+    updatedParam.attr("class", "paramNode")
+        .attr("transform", function (d) {
+            return "translate(" + d.y + "," + d.x + ")";
+        });
+    updatedParam.select("circle")
+        .attr("r", 3)
+        .attr("fill", "orange");
+    updatedParam.select("text")
+        .html(function (d) { return tspanStringify(d.label); });
 
     console.log(fmroot);
 
@@ -1471,6 +1516,9 @@ function highlightNode(node) {
 function separate(getSub, a, b) {
     return function (a, b) {
         var sep = 2;  // space between nodes
+        // root of node a/b
+        var _root = a.ancestors()
+            .filter(function (d) { return d.depth === 0; })[0];
 
         // comp-, func-, parm-nodeのラベル幅を求める(子ノードは考慮しない)
         var getWidth = function (node) {
@@ -1572,7 +1620,7 @@ function separate(getSub, a, b) {
                 jptrIndex++
             } while (1)
             // jptrAとjptrBがともに持つ親ノード
-            var rootAandB = perseJptr(root, jptrA.substring(0, jptrIndex))
+            var rootAandB = perseJptr(_root, jptrA.substring(0, jptrIndex))
 
             // jptrAとjptrBを共通の親ノードまで遡る
             var widenA = widenForward(a, rootAandB);
