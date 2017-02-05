@@ -1363,27 +1363,32 @@ function delJptr(jptr, node = root) {
     var argIndex = jptr.match(/\d+$/)[0];  // indexを切り出し
     var jptrLeft = jptr.slice(0, -argIndex.length);
     var re = RegExp("^" + jptrLeft)
-    var _del = function (ptr, i, arr) {
-        if (!re.test(ptr)) { return; }
-        // 引数のjptrと、data中のjptrのindexを比較
-        var _right = ptr.split(re)[1];
-        var jptrIndex = _right.match(/^\d+/)[0];  // each要素のindex
-        var jptrRight = _right.split(/^\d+/)[1];  // each要素のindex以降のjptr文字列
-        if (jptrIndex == argIndex) {
-            arr.splice(i, 1);
-        }
-        // 削除したindexより後の要素を繰り上げ
-        if (Number(jptrIndex) > Number(argIndex)) {
-            var newNum = Number(jptrIndex) - 1;
-            arr[i] = jptrLeft + String(newNum) + jptrRight;
+    var _del = function (prnts) {
+        var index = prnts.length - 1;
+        while (index >= 0) {
+            // 引数のjptrと、data中のjptrのindexを比較
+            var _right = prnts[index].split(re)[1];
+            if (_right !== undefined) {
+                var jptrIndex = _right.match(/^\d+/)[0];  // each要素のindex
+                var jptrRight = _right.split(/^\d+/)[1];  // each要素のindex以降のjptr文字列
+                if (jptrIndex == argIndex) {
+                    prnts.splice(index, 1);
+                }
+                // 削除したindexより後の要素を繰り上げ
+                else if (Number(jptrIndex) > Number(argIndex)) {
+                    var newNum = Number(jptrIndex) - 1;
+                    prnts[index] = jptrLeft + String(newNum) + jptrRight;
+                }
+            }
+            index--;
         }
     }
     node.descendants().forEach(function (d) {
         d.data.func.forEach(function (f) {
-            f.parents.forEach(_del)
+            _del(f.parents);
         })
         d.data.param.forEach(function (p) {
-            p.parents.forEach(_del)
+            _del(p.parents);
         })
     });
 }
