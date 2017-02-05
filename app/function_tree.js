@@ -269,27 +269,6 @@ function makeTree(dataset, _transform = undefined) {
                 + " " + d.parent.y + "," + d.parent.x;
         });
 
-    // ノード作成
-    var node = d3.select("#compTreeSVG .treeContainer")
-        .selectAll(".node")
-        .data(root.descendants());
-    node.exit().remove();
-    var enteredNode = node.enter()
-        .append("g");
-    enteredNode.append("circle")
-        .attr("r", 4)
-        .attr("fill", "teal");
-    enteredNode.append("text")
-        .attr("font-size", getNodeHeight() + "px");
-    var updatedNode = enteredNode.merge(node);
-    // ノードに円とテキストを表示
-    updatedNode.attr("class", "node")
-        .attr("transform", function (d) {
-            return "translate(" + d.y + "," + d.x + ")";
-        });
-    updatedNode.select("text").html(function (d) { return tspanStringify(d.label) });
-    updatedNode.on("click", clickNode);
-
     // func-nodeをSVG描画
     // func-nodeをつなぐ線の色を設定
     var xArray = root.funcDescendants()
@@ -327,31 +306,6 @@ function makeTree(dataset, _transform = undefined) {
                     + " " + d.parent.y + "," + d.parent.x;
             }
         });
-
-    // func-nodeをsvgに追加
-    var funcNode = d3.select('#compTreeSVG .treeContainer')
-        .selectAll(".funcNode")
-        .data(root.funcDescendants());
-    funcNode.exit().remove();
-    var enteredFuncNode = funcNode.enter()
-        .append("g");
-    enteredFuncNode.append("circle")
-        .attr("r", 3)
-        .attr("fill", "red");
-    enteredFuncNode.append("text")
-        .attr("font-size", getNodeHeight() * 0.9 + "px")
-        .attr("fill", "dimgray")
-        .attr("dominant-baseline", "middle");
-    var updatedFuncNode = enteredFuncNode.merge(funcNode);
-    // func-nodeのcircleとtextを描画
-    updatedFuncNode.attr("class", "funcNode")
-        .attr("transform", function (d) {
-            return "translate(" + d.y + "," + d.x + ")";
-        });
-    updatedFuncNode.select("text")
-        .html(function (d) { return tspanStringify(d.label) });
-    updatedFuncNode.on("click", clickFuncNode);
-
     // param-nodeを線でつなぐ
     var paramLink = d3.select("#compTreeSVG .treeContainer")
         .selectAll(".paramLink")
@@ -376,6 +330,51 @@ function makeTree(dataset, _transform = undefined) {
                     + " " + d.parent.y + "," + d.parent.x;
             }
         });
+
+    // ノード作成
+    var node = d3.select("#compTreeSVG .treeContainer")
+        .selectAll(".node")
+        .data(root.descendants());
+    node.exit().remove();
+    var enteredNode = node.enter()
+        .append("g");
+    enteredNode.append("circle")
+        .attr("r", 4)
+        .attr("fill", "teal");
+    enteredNode.append("text")
+        .attr("font-size", getNodeHeight() + "px");
+    var updatedNode = enteredNode.merge(node);
+    // ノードに円とテキストを表示
+    updatedNode.attr("class", "node")
+        .attr("transform", function (d) {
+            return "translate(" + d.y + "," + d.x + ")";
+        });
+    updatedNode.select("text").html(function (d) { return tspanStringify(d.label) });
+    updatedNode.on("click", clickNode);
+
+    // func-nodeをsvgに追加
+    var funcNode = d3.select('#compTreeSVG .treeContainer')
+        .selectAll(".funcNode")
+        .data(root.funcDescendants());
+    funcNode.exit().remove();
+    var enteredFuncNode = funcNode.enter()
+        .append("g");
+    enteredFuncNode.append("circle")
+        .attr("r", 3)
+        .attr("fill", "red");
+    enteredFuncNode.append("text")
+        .attr("font-size", getNodeHeight() * 0.9 + "px")
+        .attr("fill", "dimgray")
+        .attr("dominant-baseline", "middle");
+    var updatedFuncNode = enteredFuncNode.merge(funcNode);
+    // func-nodeのcircleとtextを描画
+    updatedFuncNode.attr("class", "funcNode")
+        .attr("transform", function (d) {
+            return "translate(" + d.y + "," + d.x + ")";
+        });
+    updatedFuncNode.select("text")
+        .html(function (d) { return tspanStringify(d.label) });
+    updatedFuncNode.on("click", clickFuncNode);
 
     // param-nodeをsvgに追加
     var paramNode = d3.select('#compTreeSVG .treeContainer')
