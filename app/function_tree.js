@@ -160,7 +160,7 @@ function makeTree(dataset, _transform = undefined) {
             funcArr[i].parents = funcElm.data.parents.map(function (p) {
                 var _r = perseJptr(root, p);
                 if (_r === undefined) {
-                    print(p + " is invalid json pointer");
+                    console.log(p + " is invalid json pointer");
                     return;
                 }
                 return _r;
@@ -182,7 +182,7 @@ function makeTree(dataset, _transform = undefined) {
             paramArr[i].parents = paramElm.data.parents.map(function (p) {
                 var _r = perseJptr(root, p);
                 if (_r === undefined) {
-                    print(p + " is invalid json pointer");
+                    console.log(p + " is invalid json pointer");
                     return;
                 }
                 return _r;
