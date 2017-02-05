@@ -158,10 +158,15 @@ function makeTree(dataset, _transform = undefined) {
             lineOffset += funcElm.label.length;
             // set parent for each func-node
             funcArr[i].parents = funcElm.data.parents.map(function (p) {
-                return perseJptr(root, p);
+                var _r = perseJptr(root, p);
+                if(_r === undefined) {
+                    print(p + " is invalid json pointer");
+                    return;
+                }
+                return _r;
             });
             // add children of each func-node
-            funcElm.parents.forEach(function (funcPrnt) {
+            funcArr[i].parents.forEach(function (funcPrnt) {
                 if (funcPrnt.children === undefined) {
                     funcPrnt.children = Array();
                 }
