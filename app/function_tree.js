@@ -159,7 +159,7 @@ function makeTree(dataset, _transform = undefined) {
             // set parent for each func-node
             funcArr[i].parents = funcElm.data.parents.map(function (p) {
                 var _r = perseJptr(root, p);
-                if(_r === undefined) {
+                if (_r === undefined) {
                     print(p + " is invalid json pointer");
                     return;
                 }
@@ -181,7 +181,7 @@ function makeTree(dataset, _transform = undefined) {
             // set parent for each param-node
             paramArr[i].parents = paramElm.data.parents.map(function (p) {
                 var _r = perseJptr(root, p);
-                if(_r === undefined) {
+                if (_r === undefined) {
                     print(p + " is invalid json pointer");
                     return;
                 }
@@ -522,7 +522,7 @@ function clickNode(node) {
                 }
                 prnt.data.children.push(node.data);
                 node.parent.data.children.splice(oldIndex, 1);
-                delJptr(node.parent, oldPtr);
+                delJptr(oldPtr);
                 makeTree(dataset);
                 setEditPane();
             }
@@ -600,7 +600,7 @@ function clickNode(node) {
                     // 子Node削除によりjson pointerが繰り上がる
                     var _jptr = node == root ? "" : getJptr(node);
                     _jptr += "/children/" + String(evt.oldIndex - 1);
-                    delJptr(node, _jptr)
+                    delJptr(_jptr)
                     makeTree(dataset,
                         d3.select("#compTreeSVG .treeContainer").attr("transform"));
                 }
@@ -695,7 +695,7 @@ function clickNode(node) {
                     node.data.func.splice(evt.oldIndex - 1, 1);
                     // 削除したfunc-nodeを親としているjson pointerを削除
                     var _jptr = getJptr(node) + "/func/" + String(evt.oldIndex - 1);
-                    delJptr(node, _jptr);
+                    delJptr(_jptr);
                     // データ再構築
                     var _jptr = getJptr(node);
                     makeTree(dataset,
@@ -1357,7 +1357,9 @@ function getJptr(node, ptr = "") {
 }
 
 // delete json pointer
-function delJptr(node, jptr) {
+// jptr: json pointer to delete
+// node: root node for searching json pointer
+function delJptr(jptr, node = root) {
     var argIndex = jptr.match(/\d+$/)[0];  // indexを切り出し
     var jptrLeft = jptr.slice(0, -argIndex.length);
     var re = RegExp("^" + jptrLeft)
