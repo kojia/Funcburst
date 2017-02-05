@@ -180,7 +180,12 @@ function makeTree(dataset, _transform = undefined) {
             lineOffset += paramElm.label.length;
             // set parent for each param-node
             paramArr[i].parents = paramElm.data.parents.map(function (p) {
-                return perseJptr(root, p);
+                var _r = perseJptr(root, p);
+                if(_r === undefined) {
+                    print(p + " is invalid json pointer");
+                    return;
+                }
+                return _r;
             });
             // set child for parent func-node that is set above
             paramElm.parents.forEach(function (paramPrnt) {
