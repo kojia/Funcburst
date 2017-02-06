@@ -412,12 +412,13 @@ function makeTree(dataset, _transform = undefined) {
             $("#comp-tree").css("display", "block");
         }
         var bbox = $("#compTreeSVG .treeContainer")[0].getBBox();
-        var k = $("#comp-tree").height() / bbox.height * 0.85;
-        k = k > 10 ? 10 : k;
+        var ky = $("#comp-tree").height() / bbox.height * 0.9;
+        var kx = $("#comp-tree").width() / bbox.width * 0.9;
+        var k = ky > kx ? kx : ky;
         var ty = bbox.height / 2;
         ty = ty < 150 ? 150 : ty;
         svg.call(zoom.transform, d3.zoomIdentity
-            .translate(10, ty + 10)
+            .translate(10, ty + 2 * getNodeHeight())
             .scale(k));
         if (_is_block == false) {
             $("#comp-tree").css("display", "none");
@@ -1305,7 +1306,7 @@ function drawFMTree(fmroot) {
     var ty = bbox.height / 2;
     ty = ty < 150 ? 150 : ty;
     svg.call(zoom.transform, d3.zoomIdentity
-        .translate(10, ty + 10)
+        .translate(10, ty + 2 * getFMNodeHeight())
         .scale(k));
     if (_is_block == false) {
         $("#FM-tree").css("display", "none");
