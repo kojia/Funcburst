@@ -76,10 +76,6 @@ $("#show-svg").click(function () {
 });
 // reload tree view
 $("#reload").click(function () {
-    d3.select("#comp-edit")
-        .style("display", "none");
-    d3.select("#func-edit")
-        .style("display", "none");
     makeTree(dataset);
     setEditPane();
 })
@@ -236,9 +232,9 @@ function makeTree(dataset, _transform = undefined) {
     // treeを入れるコンテナを作成
     var zoom = d3.zoom()
         .scaleExtent([.2, 10])
-        .translateExtent(
-        [[$("#compTreeSVG").width() * -2, $("#compTreeSVG").height() * -2],
-        [$("#compTreeSVG").width() * 2, $("#compTreeSVG").height() * 2]])
+        // .translateExtent(
+        // [[$("#compTreeSVG").width() * -2, $("#compTreeSVG").height() * -2],
+        // [$("#compTreeSVG").width() * 2, $("#compTreeSVG").height() * 2]])
         .on("zoom", zoomed);
     function zoomed() {
         d3.select("#compTreeSVG .treeContainer")
