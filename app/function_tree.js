@@ -5,6 +5,7 @@ makeTree(dataset);
 $(document).ready(function () {
     $('.modal').modal();
     $(".button-collapse").sideNav();
+    $("select").material_select();
 });
 
 // SVG画面サイズ調整
@@ -328,26 +329,26 @@ function makeTree(dataset, _transform = undefined) {
         });
 
     // ノード作成
-    var node = d3.select("#compTreeSVG .treeContainer")
-        .selectAll(".node")
+    var compNode = d3.select("#compTreeSVG .treeContainer")
+        .selectAll(".compNode")
         .data(root.descendants());
-    node.exit().remove();
-    var enteredNode = node.enter()
+    compNode.exit().remove();
+    var enteredNode = compNode.enter()
         .append("g");
     enteredNode.append("circle")
         .attr("r", 4)
         .attr("fill", "teal");
     enteredNode.append("text")
         .attr("font-size", getNodeHeight() + "px");
-    var updatedNode = enteredNode.merge(node);
+    var updatedNode = enteredNode.merge(compNode);
     // ノードに円とテキストを表示
-    updatedNode.attr("class", "node")
+    updatedNode.attr("class", "compNode")
         .attr("transform", function (d) {
             return "translate(" + d.y + "," + d.x + ")";
         });
     updatedNode.select("text").html(function (d) { return tspanStringify(d.label) });
-    updatedNode.on("click", clickNode);
-
+    updatedNode.on("click", clickCompNode);
+    updatedNode.call(styleNode);
     // func-nodeをsvgに追加
     var funcNode = d3.select('#compTreeSVG .treeContainer')
         .selectAll(".funcNode")
@@ -433,8 +434,8 @@ function tspanStringify(strArr) {
     return _html;
 }
 
-// ノードクリック時の挙動
-function clickNode(node) {
+// componentノードクリック時の挙動
+function clickCompNode(node) {
     console.log(node);
 
     setEditPane("comp");
@@ -448,13 +449,20 @@ function clickNode(node) {
             node.data.name = d3.event.target.value;
             makeTree(dataset);
         });
+    // bind category
+    bindCategory("comp", node);
+    d3.select("#comp-edit .btn-edit-cat")
+        .on("click", function () {
+            $("#modal-category").modal("open");
+            updateCatSettings(function () { return bindCategory("comp", node) });
+        })
     // bind parent
     var prnt = d3.select("#comp-parent")
         .selectAll("li.collection-item")
         .data(function () { return node.parent ? [node.parent] : []; });
     prnt.exit().remove();  // 減った要素を削除
     var enteredPrnt = prnt.enter()  // 増えた要素を追加
-        .append("li")
+        .append("li");
     enteredPrnt.append("input");
     enteredPrnt.merge(prnt)  // 内容更新
         .attr("class", "collection-item")
@@ -563,7 +571,7 @@ function clickNode(node) {
         var _jptr = getJptr(node);
         makeTree(dataset,
             d3.select("#compTreeSVG .treeContainer").attr("transform"));
-        clickNode(perseJptr(root, _jptr));
+        clickCompNode(perseJptr(root, _jptr));
     }
     addChildBtn.on("click", function () {
         $("#modal-comp-add-child").modal("open");
@@ -583,6 +591,7 @@ function clickNode(node) {
     if ("compChildrenSort" in window) { compChildrenSort.destroy(); }
     var el = document.getElementById("comp-children");
     compChildrenSort = Sortable.create(el, {
+        animation: 100,
         draggable: ".collection-item.drag",
         filter: ".js-remove",
         onFilter: function (evt) {
@@ -622,7 +631,7 @@ function clickNode(node) {
             var _jptr = getJptr(node);
             makeTree(dataset,
                 d3.select("#compTreeSVG .treeContainer").attr("transform"));
-            clickNode(perseJptr(root, _jptr));
+            clickCompNode(perseJptr(root, _jptr));
         }
     });
 
@@ -659,7 +668,7 @@ function clickNode(node) {
         var _jptr = getJptr(node);
         makeTree(dataset,
             d3.select("#compTreeSVG .treeContainer").attr("transform"));
-        clickNode(perseJptr(root, _jptr));
+        clickCompNode(perseJptr(root, _jptr));
     }
     addFuncBtn.on("click", function () {
         $("#modal-comp-add-func").modal("open");
@@ -679,6 +688,7 @@ function clickNode(node) {
     if ("compFuncSort" in window) { compFuncSort.destroy(); }
     var el_func = document.getElementById("comp-func");
     compFuncSort = Sortable.create(el_func, {
+        animation: 100,
         draggable: ".collection-item.drag",
         filter: ".js-remove",
         onFilter: function (evt) {
@@ -696,7 +706,7 @@ function clickNode(node) {
                     var _jptr = getJptr(node);
                     makeTree(dataset,
                         d3.select("#compTreeSVG .treeContainer").attr("transform"));
-                    clickNode(perseJptr(root, _jptr));
+                    clickCompNode(perseJptr(root, _jptr));
                 }
                 confirmDelNode(node.data.func[evt.oldIndex - 1].name, _del);
             }
@@ -720,7 +730,7 @@ function clickNode(node) {
             var _jptr = getJptr(node);
             makeTree(dataset,
                 d3.select("#compTreeSVG .treeContainer").attr("transform"));
-            clickNode(perseJptr(root, _jptr));
+            clickCompNode(perseJptr(root, _jptr));
         }
     });
 
@@ -757,7 +767,7 @@ function clickNode(node) {
         var _jptr = getJptr(node);
         makeTree(dataset,
             d3.select("#compTreeSVG .treeContainer").attr("transform"));
-        clickNode(perseJptr(root, _jptr));
+        clickCompNode(perseJptr(root, _jptr));
     }
     addParamBtn.on("click", function () {
         $("#modal-comp-add-param").modal("open");
@@ -777,6 +787,7 @@ function clickNode(node) {
     if ("compParamSort" in window) { compParamSort.destroy(); }
     var el_param = document.getElementById("comp-param");
     compParamSort = Sortable.create(el_param, {
+        animation: 100,
         draggable: ".collection-item.drag",
         filter: ".js-remove",
         onFilter: function (evt) {
@@ -791,7 +802,7 @@ function clickNode(node) {
                     var _jptr = getJptr(node);
                     makeTree(dataset,
                         d3.select("#compTreeSVG .treeContainer").attr("transform"));
-                    clickNode(perseJptr(root, _jptr));
+                    clickCompNode(perseJptr(root, _jptr));
                 }
                 confirmDelNode(node.data.param[evt.oldIndex - 1].name, _del);
             }
@@ -810,7 +821,7 @@ function clickNode(node) {
             var _jptr = getJptr(node);
             makeTree(dataset,
                 d3.select("#compTreeSVG .treeContainer").attr("transform"));
-            clickNode(perseJptr(root, _jptr));
+            clickCompNode(perseJptr(root, _jptr));
         }
     });
 }
@@ -831,7 +842,13 @@ function clickFuncNode(node) {
             makeTree(dataset,
                 d3.select("#compTreeSVG .treeContainer").attr("transform"));
         });
-
+    // bind category
+    bindCategory("func", node);
+    d3.select("#func-edit .btn-edit-cat")
+        .on("click", function () {
+            $("#modal-category").modal("open");
+            updateCatSettings(function () { return bindCategory("func", node) });
+        })
     // bind comp-node which func is solved by (isb)
     var isb = d3.select("#func-isb")
         .selectAll("li.collection-item")
@@ -921,6 +938,7 @@ function clickFuncNode(node) {
     if ("funcParentsSort" in window) { funcParentsSort.destroy(); }
     var el = document.getElementById("func-parents");
     funcParentsSort = Sortable.create(el, {
+        animation: 100,
         draggable: ".collection-item.drag",
         filter: ".js-remove",
         onFilter: function (evt) {
@@ -974,7 +992,13 @@ function clickParamNode(node) {
             makeTree(dataset,
                 d3.select("#compTreeSVG .treeContainer").attr("transform"));
         });
-
+    // bind category
+    bindCategory("param", node);
+    d3.select("#param-edit .btn-edit-cat")
+        .on("click", function () {
+            $("#modal-category").modal("open");
+            updateCatSettings(function () { return bindCategory("param", node) });
+        })
     // bind comp-node which parameter is constrained by (icb)
     var icb = d3.select("#param-icb")
         .selectAll("li.collection-item")
@@ -1064,6 +1088,7 @@ function clickParamNode(node) {
     if ("paramParentsSort" in window) { paramParentsSort.destroy(); }
     var el = document.getElementById("param-parents");
     paramParentsSort = Sortable.create(el, {
+        animation: 100,
         draggable: ".collection-item.drag",
         filter: ".js-remove",
         onFilter: function (evt) {
@@ -1686,3 +1711,213 @@ function separate(getSub, a, b) {
         }
     }
 };
+
+// bind category
+// type: what is editting in pane (comp / func / param)
+function bindCategory(type, node) {
+    var id = "#" + type + "-edit";
+    var catList = ["uncategolized"];
+    if (dataset["category"] && dataset["category"][type]) {
+        catList = catList.concat(dataset["category"][type]);
+    }
+    var sel = d3.select(id)
+        .select(".category select");
+    var cat = sel.selectAll("option")
+        .data(catList);
+    cat.exit().remove();
+    var enteredCat = cat.enter()
+        .append("option");
+    enteredCat.merge(cat)
+        .attr("value", function (d) { return catList.indexOf(d); })
+        .text(function (d) { return d; });
+    // set category which has already set on the selected node
+    sel.property("value", function () {
+        return catList.indexOf(node.data.cat);
+    });
+    // change category
+    $(id + " .category select").off("change");
+    $(id + " .category select").on("change", function () {
+        if (sel.property("value") != 0) {
+            node.data.cat = catList[sel.property("value")];
+        } else {
+            node.data.cat = "";
+        }
+        d3.select("#comp-tree").selectAll("." + type + "Node")
+            .call(styleNode);
+    });
+    // update materialize select forms
+    $("select").material_select();
+}
+
+// update category settings modal content
+function updateCatSettings(updateEditPane) {
+    if (!("sort" in window)) {
+        sort = {}
+    };
+    var _update = function (id, type) {
+        // reset add category form
+        $("#" + id + " .add_cat form")[0].reset();
+
+        if (!dataset["category"]) {
+            dataset["category"] = {};
+        }
+        if (!dataset["category"][type]) {
+            dataset["category"][type] = [];
+        }
+        var catList = dataset["category"][type];
+
+        var cat = d3.select("#" + id).select("ul")
+            .selectAll("li.collection-item")
+            .data(catList);
+        cat.exit().remove();
+        var enteredCat = cat.enter()
+            .append("li");
+        enteredCat.append("div")
+            .attr("onsubmit", "return false;")
+            .attr("class", "input-field");
+        enteredCat.select("div")
+            .append("i").attr("class", "material-icons prefix");
+        enteredCat.select("div")
+            .append("input");
+        // remove icon
+        enteredCat.append("span").attr("class", "suffix")
+            .append("i")
+            .attr("class", "js-remove material-icons")
+            .text("remove_circle_outline");
+        var updatedCat = enteredCat.merge(cat)
+            .attr("class", "collection-item drag");
+        // category color mark
+        updatedCat.select("i")
+            .style("color", function (d) { return getCatColor(d, type) })
+            .text("crop_square");
+        // category name
+        updatedCat.select("input")
+            .property("value", function (d) { return d; });
+        // change category name
+        updatedCat.select("input")
+            .on("change", function (d) {
+                catList[catList.indexOf(d)] = d3.event.target.value;
+                _update(id, type);
+                updateEditPane();
+            });
+        // set RegExp pattern in <input> for validation
+        // inhibit to input already registered name
+        d3.select("#" + id + " .add_cat input")
+            .attr("pattern", function () {
+                var re;
+                if (catList.length != 0) {
+                    re = "^(?!";
+                    re += catList.reduce(function (a, b) {
+                        if (a === "") {
+                            return b;
+                        }
+                        else {
+                            return a + "|" + b;
+                        }
+                    }, "")
+                    re += ").*$"
+                }
+                else {
+                    re = ".*"
+                }
+                return re;
+            });
+        // add category
+        d3.select("#" + id + " .add_cat form")
+            .on("submit", function () {
+                var addInput = d3.select("#" + id + " .add_cat input");
+                var newCat = addInput.property("value");
+                catList.push(newCat);
+                _update(id, type);
+                updateEditPane();
+            })
+        // sortable.js option
+        if (sort[id]) {
+            sort[id].destroy();
+        }
+        var list = $("#" + id + " ul").get(0);
+        sort[id] = Sortable.create(list, {
+            animation: 100,
+            draggable: ".collection-item.drag",
+            onUpdate: function (evt) {  // behavior on drag
+                console.log(evt.oldIndex + "   " + evt.newIndex);
+                var _ = catList[evt.oldIndex - 1];
+                catList[evt.oldIndex - 1] = catList[evt.newIndex - 1];
+                catList[evt.newIndex - 1] = _;
+                _update(id, type);
+                updateEditPane();
+                d3.select("#comp-tree").selectAll("." + type + "Node")
+                    .call(styleNode);
+            },
+            // remove item
+            filter: ".js-remove",
+            onFilter: function (evt) {
+                if (Sortable.utils.is(evt.target, ".js-remove")) {  // Click on remove button
+                    var _del = function () {
+                        var item = evt.item;
+                        item.parentNode.removeChild(item); // remove sortable item
+                        // datasetから削除
+                        catList.splice(evt.oldIndex - 1, 1);
+                        _update(id, type);
+                        updateEditPane();
+                        d3.select("#comp-tree").selectAll("." + type + "Node")
+                            .call(styleNode);
+                    }
+                    confirmDelNode(catList[evt.oldIndex - 1], _del);
+                }
+            }
+        });
+    }
+    _update("cat-set-comp", "comp");
+    _update("cat-set-func", "func");
+    _update("cat-set-param", "param");
+}
+
+// set style of node in SVG
+// use from d3.select.call()
+function styleNode(selection) {
+    var nodeType = selection.attr("class");
+    var type = nodeType.substr(0, nodeType.length - 4);
+    var fontSize = {
+        "comp": getNodeHeight() + "px",
+        "func": getNodeHeight() * 0.9 + "px",
+        "param": getNodeHeight() * 0.9 + "px"
+    }
+    var fontColor = {
+        "comp": "black",
+        "func": "dimgray",
+        "param": "dimgray"
+    }
+    selection.select("text")
+        .attr("fill", fontColor[type])
+        .attr("stroke", function (d) {
+            return getCatColor(d.data.cat, type);
+        })
+        .attr("stroke-width", "0.5px");
+}
+
+// get category color
+// str: category string, type: comp/func/paraam
+function getCatColor(category, type) {
+    if (!dataset["category"]) {
+        dataset["category"] = {};
+    }
+    if (!dataset["category"][type]) {
+        dataset["category"][type] = [];
+    }
+    var index = dataset["category"][type].indexOf(category);
+    if (index == -1) {
+        return undefined;
+    }
+    index = index % 10;
+    var cat20bc = d3.schemeCategory20b.concat(d3.schemeCategory20c);
+    if (type == "comp") {
+        return d3.schemeCategory10[index];
+    } else if (type == "func") {
+        return cat20bc[index * 4];
+    } else if (type == "param") {
+        return cat20bc[index * 4 + 2];
+    } else {
+        return undefined;
+    }
+}

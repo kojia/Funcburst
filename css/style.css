@@ -12,6 +12,9 @@ main {
 .btn {
 	text-transform: none;
 }
+.drag {
+	cursor: move;
+}
 
 /*Tree SVG*/
 .container,
@@ -64,6 +67,9 @@ main {
 }
 
 /*side Editor*/
+.category {
+	overflow: visible;
+}
 #slide-out {
     padding-left: 5px;
 	padding-right: 5px;
@@ -135,6 +141,34 @@ ul.collection.with-header li.collection-item.add button {
 }
 .glass {
 	background: rgba(255,255,255,0.９);
+}
+/*category settings*/
+#nav-edit-cat .collapsible-header {
+	padding: 0 1rem;
+	border-bottom: 1px solid #ccc;
+	min-height: 2.5rem;
+	line-height: 2.5rem;
+}
+#nav-edit-cat .collapsible-body {
+	padding: 0 2rem;
+	border-bottom: 1px solid #ccc;
+	min-height: 2.5rem;
+	line-height: 2.5rem;
+	word-wrap: break-word;
+}
+#modal-category .collection-item {
+	clear: both;
+	display: table;
+	margin: 0;
+}
+#modal-category .collection-item .input-field{
+	margin: 0;
+}
+#modal-category .collection-item input {
+	margin-left: 2.5rem;
+	margin-top: 0;
+	margin-bottom: 0;
+	height: 1rem;
 }
 
 /**/
