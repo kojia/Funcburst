@@ -333,22 +333,21 @@ function makeTree(dataset, _transform = undefined) {
         .selectAll(".compNode")
         .data(root.descendants());
     compNode.exit().remove();
-    var enteredNode = compNode.enter()
+    var enteredCompNode = compNode.enter()
         .append("g");
-    enteredNode.append("circle")
+    enteredCompNode.append("circle")
         .attr("r", 4)
         .attr("fill", "teal");
-    enteredNode.append("text")
-        .attr("font-size", getNodeHeight() + "px");
-    var updatedNode = enteredNode.merge(compNode);
+    enteredCompNode.append("text");
+    var updatedCompNode = enteredCompNode.merge(compNode);
     // ノードに円とテキストを表示
-    updatedNode.attr("class", "compNode")
+    updatedCompNode.attr("class", "compNode")
         .attr("transform", function (d) {
             return "translate(" + d.y + "," + d.x + ")";
         });
-    updatedNode.select("text").html(function (d) { return tspanStringify(d.label) });
-    updatedNode.on("click", clickCompNode);
-    updatedNode.call(styleNode);
+    updatedCompNode.select("text").html(function (d) { return tspanStringify(d.label) });
+    updatedCompNode.on("click", clickCompNode);
+    updatedCompNode.call(styleNode);
     // func-nodeをsvgに追加
     var funcNode = d3.select('#compTreeSVG .treeContainer')
         .selectAll(".funcNode")
@@ -359,10 +358,7 @@ function makeTree(dataset, _transform = undefined) {
     enteredFuncNode.append("circle")
         .attr("r", 3)
         .attr("fill", "red");
-    enteredFuncNode.append("text")
-        .attr("font-size", getNodeHeight() * 0.9 + "px")
-        .attr("fill", "dimgray")
-        .attr("dominant-baseline", "middle");
+    enteredFuncNode.append("text");
     var updatedFuncNode = enteredFuncNode.merge(funcNode);
     // func-nodeのcircleとtextを描画
     updatedFuncNode.attr("class", "funcNode")
@@ -372,7 +368,7 @@ function makeTree(dataset, _transform = undefined) {
     updatedFuncNode.select("text")
         .html(function (d) { return tspanStringify(d.label) });
     updatedFuncNode.on("click", clickFuncNode);
-
+    updatedFuncNode.call(styleNode);
     // param-nodeをsvgに追加
     var paramNode = d3.select('#compTreeSVG .treeContainer')
         .selectAll(".paramNode")
@@ -383,10 +379,7 @@ function makeTree(dataset, _transform = undefined) {
     enteredParamNode.append("circle")
         .attr("r", 3)
         .attr("fill", "orange");
-    enteredParamNode.append("text")
-        .attr("font-size", getNodeHeight() * 0.9 + "px")
-        .attr("fill", "dimgray")
-        .attr("dominant-baseline", "middle");
+    enteredParamNode.append("text");
     var updatedParamNode = enteredParamNode.merge(paramNode);
     // param-nodeのcircleとtextを描画
     updatedParamNode.attr("class", "paramNode")
@@ -396,9 +389,9 @@ function makeTree(dataset, _transform = undefined) {
     updatedParamNode.select("text")
         .html(function (d) { return tspanStringify(d.label) });
     updatedParamNode.on("click", clickParamNode);
+    updatedParamNode.call(styleNode);
 
     // 画面サイズに合わせてツリーをオフセット&スケール
-
     if (_transform !== undefined) {
         d3.select("#compTreeSVG .treeContainer")
             .attr("transform", _transform);
@@ -1876,8 +1869,13 @@ function updateCatSettings(updateEditPane) {
 // set style of node in SVG
 // use from d3.select.call()
 function styleNode(selection) {
+    // 要素がないselectionでもcallで関数呼ばれるので、エラー回避のために要素数判定してreturn
+    if (selection._groups[0].length === 0) {
+        return;
+    }
     var nodeType = selection.attr("class");
     var type = nodeType.substr(0, nodeType.length - 4);
+    console.log(type);
     var fontSize = {
         "comp": getNodeHeight() + "px",
         "func": getNodeHeight() * 0.9 + "px",
@@ -1888,12 +1886,18 @@ function styleNode(selection) {
         "func": "dimgray",
         "param": "dimgray"
     }
+    var baseline = {
+        "comp": "auto",
+        "func": "central",
+        "param": "central"
+    }
     selection.select("text")
         .attr("fill", fontColor[type])
         .attr("stroke", function (d) {
             return getCatColor(d.data.cat, type);
         })
-        .attr("stroke-width", "0.5px");
+        .attr("stroke-width", "0.7px")
+        .attr("dominant-baseline", baseline[type]);
 }
 
 // get category color
