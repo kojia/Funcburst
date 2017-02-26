@@ -23,21 +23,27 @@ if (1 < document.location.search.length) {
 makeTree(dataset);
 
 $(document).ready(function () {
+    // materialize initialization
     $('.modal').modal();
     $(".button-collapse").sideNav();
     $("select").material_select();
-});
-
-// SVG画面サイズ調整
-$(document).ready(function () {
+    // SVG画面サイズ調整
     hsize = $(window).height() - ($("#top-nav").height() + $("#tree-tab").height());
     $("main").css("height", hsize + "px");
-});
-$(window).resize(function () {
-    hsize = $(window).height() - $("#top-nav").height();
-    $("main").css("height", hsize + "px");
+    $(window).resize(function () {
+        hsize = $(window).height() - $("#top-nav").height();
+        $("main").css("height", hsize + "px");
+    });
 });
 
+// crate new file
+$("#create-new").click(function () {
+    var _createNew = function(){
+        dataset = makeNewComp("Root");
+        makeTree(dataset);
+    }
+    confirmDelNode("", _createNew, "create new");
+});
 // open file
 $(document).ready(function () {
     $("#readjson").change(function (e) {
@@ -1542,9 +1548,15 @@ function setEditPane(type = undefined) {
 }
 
 // confirm before delete node
-function confirmDelNode(name, f) {
+function confirmDelNode(name, f, anotherText = undefined) {
     $("#modal-remove-confirm .modal-content h4")
-        .text('Are you sure you want to delete "' + name + '"');
+        .text(function () {
+            if (anotherText) {
+                return anotherText;
+            } else {
+                return 'Are you sure you want to delete "' + name + '"';
+            }
+        });
     $("#modal-remove-confirm").modal("open");
     d3.select("#modal-remove-confirm a")
         .on("click", f)
