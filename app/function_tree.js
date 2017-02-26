@@ -1,5 +1,25 @@
 // @licence MIT
 var dataset = makeNewComp("Root");
+// get URL parameter and read initial data
+if (1 < document.location.search.length) {
+    var query = document.location.search.substring(1);
+    var param = query.split("&");
+    var paramMap = Object();
+    param.forEach(function (e) {
+        var _elem = e.split("=");
+        var _key = decodeURIComponent(_elem[0]);
+        var _item = decodeURIComponent(_elem[1]);
+        paramMap[_key] = _item;
+    });
+    if (paramMap["data"]) {
+        d3.json(paramMap["data"], function (error, data) {
+            if (!error) {
+                dataset = data;
+                makeTree(dataset);
+            }
+        });
+    }
+}
 makeTree(dataset);
 
 $(document).ready(function () {
@@ -1875,7 +1895,6 @@ function styleNode(selection) {
     }
     var nodeType = selection.attr("class");
     var type = nodeType.substr(0, nodeType.length - 4);
-    console.log(type);
     var fontSize = {
         "comp": getNodeHeight() + "px",
         "func": getNodeHeight() * 0.9 + "px",
