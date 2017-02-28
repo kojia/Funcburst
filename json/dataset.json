@@ -1,184 +1,186 @@
 {
-    "name": "明治",
-    "func": [
-        {
-            "name": "お菓子",
-            "parents": []
-        }
-    ],
-    "param": [
-        {
-            "name": "parameter",
-            "parents": []
-        }
-    ],
-    "children": [
-        {
-            "name": "チョコ菓子シリーズ",
-            "func": [
-                {
-                    "name": "チョコレート菓子",
-                    "parents": [
-                        "/func/0"
-                    ]
-                }
-            ],
-            "children": [
-                {
-                    "name": "きのこの山",
-                    "func": [
-                        {
-                            "name": "キノコ型チョコ",
-                            "parents": [
-                                "/children/0/func/0"
-                            ]
-                        },
-                        {
-                            "name": "軸クラッカー",
-                            "parents": [
-                                "/children/0/func/0"
-                            ]
-                        }
-                    ],
-                    "param": [
-                        {
-                            "name": "parameter",
-                            "parents": []
-                        }
-                    ],
-                    "children": [
-                        {
-                            "name": "味わいミント",
-                            "func": [
-                                {
-                                    "name": "ミントチョコ",
-                                    "parents": [
-                                        "/children/0/children/0/func/0"
-                                    ]
-                                },
-                                {
-                                    "name": "ココアクラッカー",
-                                    "parents": [
-                                        "/children/0/children/0/func/1"
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "name": "黒糖きなこ",
-                            "func": [
-                                {
-                                    "name": "黒糖チョコ",
-                                    "parents": [
-                                        "/children/0/children/0/func/0"
-                                    ]
-                                },
-                                {
-                                    "name": "きなこチョコ",
-                                    "parents": [
-                                        "/children/0/children/0/func/0"
-                                    ]
-                                },
-                                {
-                                    "name": "プレーンクラッカー",
-                                    "parents": [
-                                        "/children/0/children/0/func/1"
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "name": "チョコバナナ",
-                            "func": [
-                                {
-                                    "name": "ミルクチョコ",
-                                    "parents": [
-                                        "/children/0/children/0/func/0"
-                                    ]
-                                },
-                                {
-                                    "name": "バナナチョコ",
-                                    "parents": [
-                                        "/children/0/children/0/func/0"
-                                    ]
-                                },
-                                {
-                                    "name": "ココアクラッカー",
-                                    "parents": [
-                                        "/children/0/children/0/func/1"
-                                    ]
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "name": "たけのこの里",
-                    "func": [
-                        {
-                            "name": "たけのこ型チョコ",
-                            "parents": []
-                        },
-                        {
-                            "name": "サクサククッキー",
-                            "parents": []
-                        }
-                    ],
-                    "children": [
-                        {
-                            "name": "マカダミアクッキー",
-                            "func": [
-                                {
-                                    "name": "ミルクチョコ",
-                                    "parents": []
-                                },
-                                {
-                                    "name": "バニラシード入りホワイトチョコ",
-                                    "parents": []
-                                },
-                                {
-                                    "name": "マカダミアナッツ入りクッキー",
-                                    "parents": []
-                                }
-                            ]
-                        },
-                        {
-                            "name": "焼き栗",
-                            "func": [
-                                {
-                                    "name": "黒糖チョコ",
-                                    "parents": []
-                                },
-                                {
-                                    "name": "焼き栗チョコ",
-                                    "parents": []
-                                },
-                                {
-                                    "name": "カシューナッツ入りクッキー",
-                                    "parents": []
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "name": "すぎのこ村",
-                    "func": [
-                        {
-                            "name": "チョココーティング",
-                            "parents": []
-                        },
-                        {
-                            "name": "クラッシュアーモンド",
-                            "parents": []
-                        },
-                        {
-                            "name": "軸ビスケット",
-                            "parents": []
-                        }
-                    ]
-                }
-            ]
-        }
-    ]
+    "data": {
+        "name": "明治",
+        "func": [
+            {
+                "name": "お菓子",
+                "parents": []
+            }
+        ],
+        "param": [
+            {
+                "name": "parameter",
+                "parents": []
+            }
+        ],
+        "children": [
+            {
+                "name": "チョコ菓子シリーズ",
+                "func": [
+                    {
+                        "name": "チョコレート菓子",
+                        "parents": [
+                            "/func/0"
+                        ]
+                    }
+                ],
+                "children": [
+                    {
+                        "name": "きのこの山",
+                        "func": [
+                            {
+                                "name": "キノコ型チョコ",
+                                "parents": [
+                                    "/children/0/func/0"
+                                ]
+                            },
+                            {
+                                "name": "軸クラッカー",
+                                "parents": [
+                                    "/children/0/func/0"
+                                ]
+                            }
+                        ],
+                        "param": [
+                            {
+                                "name": "parameter",
+                                "parents": []
+                            }
+                        ],
+                        "children": [
+                            {
+                                "name": "味わいミント",
+                                "func": [
+                                    {
+                                        "name": "ミントチョコ",
+                                        "parents": [
+                                            "/children/0/children/0/func/0"
+                                        ]
+                                    },
+                                    {
+                                        "name": "ココアクラッカー",
+                                        "parents": [
+                                            "/children/0/children/0/func/1"
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "黒糖きなこ",
+                                "func": [
+                                    {
+                                        "name": "黒糖チョコ",
+                                        "parents": [
+                                            "/children/0/children/0/func/0"
+                                        ]
+                                    },
+                                    {
+                                        "name": "きなこチョコ",
+                                        "parents": [
+                                            "/children/0/children/0/func/0"
+                                        ]
+                                    },
+                                    {
+                                        "name": "プレーンクラッカー",
+                                        "parents": [
+                                            "/children/0/children/0/func/1"
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "チョコバナナ",
+                                "func": [
+                                    {
+                                        "name": "ミルクチョコ",
+                                        "parents": [
+                                            "/children/0/children/0/func/0"
+                                        ]
+                                    },
+                                    {
+                                        "name": "バナナチョコ",
+                                        "parents": [
+                                            "/children/0/children/0/func/0"
+                                        ]
+                                    },
+                                    {
+                                        "name": "ココアクラッカー",
+                                        "parents": [
+                                            "/children/0/children/0/func/1"
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "たけのこの里",
+                        "func": [
+                            {
+                                "name": "たけのこ型チョコ",
+                                "parents": []
+                            },
+                            {
+                                "name": "サクサククッキー",
+                                "parents": []
+                            }
+                        ],
+                        "children": [
+                            {
+                                "name": "マカダミアクッキー",
+                                "func": [
+                                    {
+                                        "name": "ミルクチョコ",
+                                        "parents": []
+                                    },
+                                    {
+                                        "name": "バニラシード入りホワイトチョコ",
+                                        "parents": []
+                                    },
+                                    {
+                                        "name": "マカダミアナッツ入りクッキー",
+                                        "parents": []
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "焼き栗",
+                                "func": [
+                                    {
+                                        "name": "黒糖チョコ",
+                                        "parents": []
+                                    },
+                                    {
+                                        "name": "焼き栗チョコ",
+                                        "parents": []
+                                    },
+                                    {
+                                        "name": "カシューナッツ入りクッキー",
+                                        "parents": []
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "name": "すぎのこ村",
+                        "func": [
+                            {
+                                "name": "チョココーティング",
+                                "parents": []
+                            },
+                            {
+                                "name": "クラッシュアーモンド",
+                                "parents": []
+                            },
+                            {
+                                "name": "軸ビスケット",
+                                "parents": []
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
 }

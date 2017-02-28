@@ -1,5 +1,18 @@
 // @licence MIT
-var dataset = makeNewComp("Root");
+var dataset = Object();
+var category = Object();
+function readData(data = undefined) {
+    if (data) {
+        if (data.data) dataset = data.data;
+        if (data.category) category = data.category;
+    } else {
+        dataset = makeNewComp("Root");
+    }
+}
+function writeData(){
+    return {"data": dataset, "category": category};
+}
+readData();
 // get URL parameter and read initial data
 if (1 < document.location.search.length) {
     var query = document.location.search.substring(1);
@@ -14,13 +27,16 @@ if (1 < document.location.search.length) {
     if (paramMap["data"]) {
         d3.json(paramMap["data"], function (error, data) {
             if (!error) {
-                dataset = data;
-                makeTree(dataset);
+                readData(data);
             }
+            makeTree(dataset);
         });
+    } else {
+        makeTree(dataset);
     }
+} else {
+    makeTree(dataset);
 }
-makeTree(dataset);
 
 $(document).ready(function () {
     // materialize initialization
@@ -38,7 +54,7 @@ $(document).ready(function () {
 
 // crate new file
 $("#create-new").click(function () {
-    var _createNew = function(){
+    var _createNew = function () {
         dataset = makeNewComp("Root");
         makeTree(dataset);
     }
@@ -54,7 +70,8 @@ $(document).ready(function () {
         reader.onload = function (e) {
             try {
                 // JSONに変換
-                dataset = $.parseJSON(reader.result);
+                _data = $.parseJSON(reader.result);
+                dataset = _data.data;
             }
             catch (e) {
                 // JSONではないファイルを読込んだとき
@@ -70,7 +87,7 @@ $(document).ready(function () {
 // save file
 $("#download").click(function () {
     var filename = $(".file-path.validate").val() || "function_tree.json";
-    var outJson = JSON.stringify(dataset);
+    var outJson = JSON.stringify(writeData(), undefined, 2);
     var blob = new Blob([outJson], { "type": "text/plain" });
     if (window.navigator.msSaveBlob) {
         window.navigator.msSaveBlob(blob, filname);
@@ -85,7 +102,7 @@ $("#download").click(function () {
     }
 });
 $("#dataURI").click(function () {
-    var outJson = JSON.stringify(dataset, undefined, 2);
+    var outJson = JSON.stringify(writeData(), undefined, 2);
     window.open("data:;charset=utf-8," + encodeURIComponent(outJson));
 });
 // open svg in another window
@@ -125,6 +142,7 @@ function getParamLabelWidth() {
 
 
 function makeTree(dataset, _transform = undefined) {
+    console.log(dataset);
     // svg initialize
     d3.select("#compTreeSVG").select("svg").remove();
 
@@ -843,6 +861,19 @@ function clickCompNode(node) {
             clickCompNode(perseJptr(root, _jptr));
         }
     });
+    // bind note
+    d3.select("#comp-edit").select(".note textarea")
+        .call(bindNote, node);
+    function bindNote(selection, node) {
+        var _note = "";
+        if (node.data.note) {
+            _note = node.data.note;
+        } else {
+            node.data.note = "";
+        }
+        selection.property("value", _note);
+        $(selection[0]).trigger("autoresize");
+    }
 }
 
 // func-nodeクリック時の挙動
@@ -1742,8 +1773,8 @@ function separate(getSub, a, b) {
 function bindCategory(type, node) {
     var id = "#" + type + "-edit";
     var catList = ["uncategolized"];
-    if (dataset["category"] && dataset["category"][type]) {
-        catList = catList.concat(dataset["category"][type]);
+    if (category[type]) {
+        catList = catList.concat(category[type]);
     }
     var sel = d3.select(id)
         .select(".category select");
@@ -1783,17 +1814,13 @@ function updateCatSettings(updateEditPane) {
         // reset add category form
         $("#" + id + " .add_cat form")[0].reset();
 
-        if (!dataset["category"]) {
-            dataset["category"] = {};
+        if (!category[type]) {
+            category[type] = [];
         }
-        if (!dataset["category"][type]) {
-            dataset["category"][type] = [];
-        }
-        var catList = dataset["category"][type];
 
         var cat = d3.select("#" + id).select("ul")
             .selectAll("li.collection-item")
-            .data(catList);
+            .data(category[type]);
         cat.exit().remove();
         var enteredCat = cat.enter()
             .append("li");
@@ -1821,7 +1848,7 @@ function updateCatSettings(updateEditPane) {
         // change category name
         updatedCat.select("input")
             .on("change", function (d) {
-                catList[catList.indexOf(d)] = d3.event.target.value;
+                category[type][category[type].indexOf(d)] = d3.event.target.value;
                 _update(id, type);
                 updateEditPane();
             });
@@ -1830,9 +1857,9 @@ function updateCatSettings(updateEditPane) {
         d3.select("#" + id + " .add_cat input")
             .attr("pattern", function () {
                 var re;
-                if (catList.length != 0) {
+                if (category[type].length != 0) {
                     re = "^(?!";
-                    re += catList.reduce(function (a, b) {
+                    re += category[type].reduce(function (a, b) {
                         if (a === "") {
                             return b;
                         }
@@ -1852,7 +1879,7 @@ function updateCatSettings(updateEditPane) {
             .on("submit", function () {
                 var addInput = d3.select("#" + id + " .add_cat input");
                 var newCat = addInput.property("value");
-                catList.push(newCat);
+                category[type].push(newCat);
                 _update(id, type);
                 updateEditPane();
             })
@@ -1866,9 +1893,9 @@ function updateCatSettings(updateEditPane) {
             draggable: ".collection-item.drag",
             onUpdate: function (evt) {  // behavior on drag
                 console.log(evt.oldIndex + "   " + evt.newIndex);
-                var _ = catList[evt.oldIndex - 1];
-                catList[evt.oldIndex - 1] = catList[evt.newIndex - 1];
-                catList[evt.newIndex - 1] = _;
+                var _ = category[type][evt.oldIndex - 1];
+                category[type][evt.oldIndex - 1] = category[type][evt.newIndex - 1];
+                category[type][evt.newIndex - 1] = _;
                 _update(id, type);
                 updateEditPane();
                 d3.select("#comp-tree").selectAll("." + type + "Node")
@@ -1882,13 +1909,13 @@ function updateCatSettings(updateEditPane) {
                         var item = evt.item;
                         item.parentNode.removeChild(item); // remove sortable item
                         // datasetから削除
-                        catList.splice(evt.oldIndex - 1, 1);
+                        category[type].splice(evt.oldIndex - 1, 1);
                         _update(id, type);
                         updateEditPane();
                         d3.select("#comp-tree").selectAll("." + type + "Node")
                             .call(styleNode);
                     }
-                    confirmDelNode(catList[evt.oldIndex - 1], _del);
+                    confirmDelNode(category[type][evt.oldIndex - 1], _del);
                 }
             }
         });
@@ -1932,15 +1959,12 @@ function styleNode(selection) {
 }
 
 // get category color
-// str: category string, type: comp/func/paraam
-function getCatColor(category, type) {
-    if (!dataset["category"]) {
-        dataset["category"] = {};
+// catStr: category name string, type: comp/func/paraam
+function getCatColor(catStr, type) {
+    if (!category[type]) {
+        category[type] = [];
     }
-    if (!dataset["category"][type]) {
-        dataset["category"][type] = [];
-    }
-    var index = dataset["category"][type].indexOf(category);
+    var index = category[type].indexOf(catStr);
     if (index == -1) {
         return undefined;
     }
