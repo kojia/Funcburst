@@ -192,6 +192,16 @@
 		<h6>Children</h6>
 	</li>
 </ul>
+<ul class="collection with-header note">
+	<li class="collection-header">
+		<h6>Note</h6>
+	</li>
+	<li class="collection-item">
+		<div class="input-field">
+			<textarea class="materialize-textarea"></textarea>
+		</div>
+	</li>
+</ul>
 </div>
 </li>
 <!--param-node Editer-->
@@ -230,6 +240,16 @@
 <ul class="collection with-header" id="param-parents">
 	<li class="collection-header">
 		<h6>Parent</h6>
+	</li>
+</ul>
+<ul class="collection with-header note">
+	<li class="collection-header">
+		<h6>Note</h6>
+	</li>
+	<li class="collection-item">
+		<div class="input-field">
+			<textarea class="materialize-textarea"></textarea>
+		</div>
 	</li>
 </ul>
 </div>
@@ -344,36 +364,36 @@
 				</ul>
 				<div class="add_cat">
 					<form onsubmit="return false;" class="input-field">
-						<input required class="validate" id="cat-set-comp-add" placeholder="New Category">
-					</form>
-				</div>
-			</div>
-			<div class="col s4" id="cat-set-func">
-				<ul>
-					<li class="collection-header">
-						<h5>Function</h5>
-					</li>
-				</ul>
-				<div class="add_cat">
-					<form onsubmit="return false;" class="input-field">
-						<input required class="validate" id="cat-set-func-add" placeholder="New Category">
-					</form>
-				</div>
-			</div>
-			<div class="col s4" id="cat-set-param">
-				<ul>
-					<li class="collection-header">
-						<h5>Parameter</h5>
-					</li>
-				</ul>
-				<div class="add_cat">
-					<form onsubmit="return false;" class="input-field">
-						<input required class="validate" id="cat-set-param-add" placeholder="New Category">
-					</form>
-				</div>
-			</div>
-		</div>
-	</div>
+<input required class="validate" id="cat-set-comp-add" placeholder="New Category">
+</form>
+</div>
+</div>
+<div class="col s4" id="cat-set-func">
+	<ul>
+		<li class="collection-header">
+			<h5>Function</h5>
+		</li>
+	</ul>
+	<div class="add_cat">
+		<form onsubmit="return false;" class="input-field">
+<input required class="validate" id="cat-set-func-add" placeholder="New Category">
+</form>
+</div>
+</div>
+<div class="col s4" id="cat-set-param">
+	<ul>
+		<li class="collection-header">
+			<h5>Parameter</h5>
+		</li>
+	</ul>
+	<div class="add_cat">
+		<form onsubmit="return false;" class="input-field">
+<input required class="validate" id="cat-set-param-add" placeholder="New Category">
+</form>
+</div>
+</div>
+</div>
+</div>
 </div>
 <!--general settings-->
 <div id="modal-settings" class="modal">

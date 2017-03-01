@@ -9,8 +9,8 @@ function readData(data = undefined) {
         dataset = makeNewComp("Root");
     }
 }
-function writeData(){
-    return {"data": dataset, "category": category};
+function writeData() {
+    return { "data": dataset, "category": category };
 }
 readData();
 // get URL parameter and read initial data
@@ -864,16 +864,6 @@ function clickCompNode(node) {
     // bind note
     d3.select("#comp-edit").select(".note textarea")
         .call(bindNote, node);
-    function bindNote(selection, node) {
-        var _note = "";
-        if (node.data.note) {
-            _note = node.data.note;
-        } else {
-            node.data.note = "";
-        }
-        selection.property("value", _note);
-        $(selection[0]).trigger("autoresize");
-    }
 }
 
 // func-nodeクリック時の挙動
@@ -1024,6 +1014,10 @@ function clickFuncNode(node) {
     enteredCldrn.merge(cldrn)
         .attr("class", "collection-item drag")
         .text(function (d) { return d.data.name; });
+
+    // bind note
+    d3.select("#func-edit").select(".note textarea")
+        .call(bindNote, node);
 }
 
 // param-nodeクリック時の挙動
@@ -1164,6 +1158,10 @@ function clickParamNode(node) {
                 d3.select("#compTreeSVG .treeContainer").attr("transform"));
         }
     });
+
+    // bind note
+    d3.select("#param-edit").select(".note textarea")
+        .call(bindNote, node);
 }
 
 // perse function means tree from component tree
@@ -1979,4 +1977,19 @@ function getCatColor(catStr, type) {
     } else {
         return undefined;
     }
+}
+
+function bindNote(selection, node) {
+    var _note = "";
+    if (node.data.note) {
+        _note = node.data.note;
+    } else {
+        node.data.note = "";
+    }
+    selection.property("value", _note);
+    $(selection.node()).trigger("autoresize");
+    // save data if editted
+    selection.on("change", function () {
+        node.data.note = selection.property("value");
+    })
 }
