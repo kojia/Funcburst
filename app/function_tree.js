@@ -345,68 +345,35 @@ function makeTree(dataset, autoscale = undefined) {
     }
 
     // ノード作成
-    var compNode = d3.select("#compTreeSVG .treeContainer")
-        .selectAll(".compNode")
-        .data(root.descendants());
-    compNode.exit().remove();
-    var enteredCompNode = compNode.enter()
-        .append("g").attr("class", "compNode");
-    enteredCompNode.append("circle")
-        .attr("r", 4)
-        .attr("fill", "teal");
-    enteredCompNode.append("text");
-    var updatedCompNode = enteredCompNode.merge(compNode);
-    // ノードに円とテキストを表示
-    updatedCompNode
-        .attr("transform", function (d) {
-            return "translate(" + d.y + "," + d.x + ")";
-        });
-    updatedCompNode.select("text").html(function (d) { return tspanStringify(d.label) });
-    updatedCompNode.on("click", clickCompNode);
-    updatedCompNode.call(styleNode);
-    // func-nodeをsvgに追加
-    var funcNode = d3.select('#compTreeSVG .treeContainer')
-        .selectAll(".funcNode")
-        .data(root.funcDescendants());
-    funcNode.exit().remove();
-    var enteredFuncNode = funcNode.enter()
-        .append("g");
-    enteredFuncNode.append("circle")
-        .attr("r", 3)
-        .attr("fill", "red");
-    enteredFuncNode.append("text");
-    var updatedFuncNode = enteredFuncNode.merge(funcNode);
-    // func-nodeのcircleとtextを描画
-    updatedFuncNode.attr("class", "funcNode")
-        .attr("transform", function (d) {
-            return "translate(" + d.y + "," + d.x + ")";
-        });
-    updatedFuncNode.select("text")
-        .html(function (d) { return tspanStringify(d.label) });
-    updatedFuncNode.on("click", clickFuncNode);
-    updatedFuncNode.call(styleNode);
-    // param-nodeをsvgに追加
-    var paramNode = d3.select('#compTreeSVG .treeContainer')
-        .selectAll(".paramNode")
-        .data(root.paramDescendants());
-    paramNode.exit().remove();
-    var enteredParamNode = paramNode.enter()
-        .append("g");
-    enteredParamNode.append("circle")
-        .attr("r", 3)
-        .attr("fill", "orange");
-    enteredParamNode.append("text");
-    var updatedParamNode = enteredParamNode.merge(paramNode);
-    // param-nodeのcircleとtextを描画
-    updatedParamNode.attr("class", "paramNode")
-        .attr("transform", function (d) {
-            return "translate(" + d.y + "," + d.x + ")";
-        });
-    updatedParamNode.select("text")
-        .html(function (d) { return tspanStringify(d.label) });
-    updatedParamNode.on("click", clickParamNode);
-    updatedParamNode.call(styleNode);
-
+    drawNode(root.descendants(), "comp");
+    drawNode(root.funcDescendants(), "func");
+    drawNode(root.paramDescendants(), "param");
+    function drawNode(nodeArr, type) {
+        var className = type + "Node";
+        var circleRadius = { "comp": 4, "func": 3, "param": 3 };
+        var circleColor = { "comp": "teal", "func": "red", "param": "orange" };
+        var clickFunc = { "comp": clickCompNode, "func": clickFuncNode, "param": clickParamNode };
+        var node = d3.select("#compTreeSVG .treeContainer")
+            .selectAll("." + className)
+            .data(nodeArr);
+        node.exit().remove();
+        var enteredNode = node.enter()
+            .append("g").attr("class", className);
+        enteredNode.append("circle")
+            .attr("r", circleRadius[type])
+            .attr("fill", circleColor[type]);
+        enteredNode.append("text");
+        var updatedNode = enteredNode.merge(node);
+        // ノードに円とテキストを表示
+        updatedNode
+            .attr("transform", function (d) {
+                return "translate(" + d.y + "," + d.x + ")";
+            });
+        updatedNode.select("text").html(function (d) { return tspanStringify(d.label) });
+        updatedNode.on("click", clickFunc[type]);
+        updatedNode.call(styleNode);
+    }
+    
     // 画面サイズに合わせてツリーをオフセット&スケール
     if (autoscale === true) {
         var _is_block = true;
