@@ -1787,10 +1787,24 @@ function updateCatSettings(updateEditPane) {
         // change category name
         updatedCat.select("input")
             .on("change", function (d) {
-                category[type][category[type].indexOf(d)] = d3.event.target.value;
+                swapCategory(type, d, d3.event.target.value);
                 _update(id, type);
                 updateEditPane();
             });
+        function swapCategory(type, oldStr, newStr) {
+            category[type][category[type].indexOf(oldStr)] = newStr;
+            var des = {
+                "comp": root.descendants(),
+                "func": root.funcDescendants(),
+                "param": root.paramDescendants()
+            }
+            des = des[type];
+            des.forEach(function (d) {
+                if (d.data.cat == oldStr) {
+                    d.data.cat = newStr;
+                }
+            })
+        };
         // set RegExp pattern in <input> for validation
         // inhibit to input already registered name
         d3.select("#" + id + " .add_cat input")
