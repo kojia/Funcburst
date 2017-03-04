@@ -1933,7 +1933,7 @@ function styleNode(selection) {
         .split(" ").filter(function (e) {
             return /.*Node$/.test(e);
         });;
-    var type = nodeType[0].substr(0, nodeType.length - 4);
+    var type = nodeType[0].substr(0, nodeType[0].length - 4);
     var fontSize = {
         "comp": getNodeHeight() + "px",
         "func": getNodeHeight() * 0.9 + "px",
