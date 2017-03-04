@@ -627,6 +627,7 @@ function clickCompNode(node, i, a) {
                     _jptr += "/children/" + String(evt.oldIndex - 1);
                     delJptr(_jptr)
                     makeTree(dataset);
+                    clickCompNode(perseJptr(root, getJptr(node)), i, a)
                 }
                 confirmDelNode(node.data.children[evt.oldIndex - 1].name, _del);
             }
