@@ -250,7 +250,7 @@ function makeTree(dataset, autoscale = undefined) {
             .filter(function (elm) { return elm.parents.length; })
             .map(function (elm) {
                 return elm.parents.map(function (prnt) {
-                    return { "child": elm, "parent": prnt }
+                    return { "x": elm.x, "y": elm.y, "parent": prnt }
                 })
             })
             .reduce(function (a, b) { return a.concat(b); }, Array());
@@ -267,7 +267,7 @@ function makeTree(dataset, autoscale = undefined) {
             .filter(function (elm) { return elm.parents.length; })
             .map(function (elm) {
                 return elm.parents.map(function (prnt) {
-                    return { "child": elm, "parent": prnt }
+                    return { "x": elm.x, "y": elm.y, "parent": prnt }
                 })
             })
             .reduce(function (a, b) { return a.concat(b); }, Array());
@@ -290,25 +290,6 @@ function makeTree(dataset, autoscale = undefined) {
         .attr("height", "100%")
         .call(zoom);
 
-    // ノード間を線でつなぐ
-    var link = d3.select("#compTreeSVG .treeContainer").selectAll(".link")
-        .data(root.descendants().slice(1));
-    link.exit().remove();
-    var enteredLink = link.enter()
-        .append("path");
-    enteredLink.merge(link)
-        .attr("class", "link")
-        .attr("fill", "none")
-        .attr("stroke-width", 2)
-        .attr("stroke-dasharray", [2, 1])
-        .attr("stroke", "gray")
-        .attr("d", function (d) {
-            return "M" + d.y + "," + d.x
-                + "C" + (d.y + d.parent.y) / 2 + "," + d.x
-                + " " + (d.y + d.parent.y) / 2 + "," + d.parent.x
-                + " " + d.parent.y + "," + d.parent.x;
-        });
-
     // func-nodeをSVG描画
     // func-nodeをつなぐ線の色を設定
     var xArray = root.funcDescendants()
@@ -321,55 +302,47 @@ function makeTree(dataset, autoscale = undefined) {
         var h = 350 * (x - xMin) / (xMax - xMin);
         return "hsla(" + h + ",100%,60%,1)";
     };
+    // ノード間を線でつなぐ
+    drawLink(root.descendants().slice(1), "comp");
+    drawLink(root.funcParentChild(), "func");
+    drawLink(root.paramParentChild(), "param");
+    function drawLink(nodeArr, type) {
+        var className = type + "Link";
+        var strokeWidth = { "comp": 2.5, "func": 1, "param": 1 };
+        var strokeDasharray = { "comp": [2, 1], "func": undefined, "param": undefined };
+        var strokeColor = {
+            "comp": "gray",
+            "func": function (d) { return getLinkColor(d.x); },
+            "param": function (d) { return getLinkColor(d.x); }
+        };
+        var curve = { "comp": 2, "func": 1.8, "param": 1.8 }
 
-    // func-nodeを線でつなぐ
-    var funcLink = d3.select("#compTreeSVG .treeContainer")
-        .selectAll(".funcLink")
-        .data(root.funcParentChild());
-    funcLink.exit().remove();
-    var enteredFuncLink = funcLink.enter()
-        .append("path");
-    enteredFuncLink.merge(funcLink)
-        .attr("class", "funcLink")
-        .attr("fill", "none")
-        .attr("stroke", function (d) { return getLinkColor(d.child.x); })
-        .attr("d", function (d) {
-            if (d.child.y == d.parent.y) {  // 同じdepthの場合
-                return "M" + d.child.y + "," + d.child.x
-                    + "C" + (d.child.y - getNodeHeight() * 2) + "," + (d.child.x + d.parent.x) / 2
-                    + " " + (d.child.y + getNodeHeight() * 2) + "," + d.parent.x
-                    + " " + d.parent.y + "," + d.parent.x;
-            } else {
-                return "M" + d.child.y + "," + d.child.x
-                    + "C" + (d.child.y + d.parent.y) / 1.8 + "," + d.child.x
-                    + " " + (d.child.y + d.parent.y) / 1.8 + "," + d.parent.x
-                    + " " + d.parent.y + "," + d.parent.x;
-            }
-        });
-    // param-nodeを線でつなぐ
-    var paramLink = d3.select("#compTreeSVG .treeContainer")
-        .selectAll(".paramLink")
-        .data(root.paramParentChild());
-    paramLink.exit().remove();
-    var enteredParamLink = paramLink.enter()
-        .append("path");
-    enteredParamLink.merge(paramLink)
-        .attr("class", "paramLink")
-        .attr("fill", "none")
-        .attr("stroke", function (d) { return getLinkColor(d.child.x); })
-        .attr("d", function (d) {
-            if (d.child.icb == d.parent.isb) {  // 同じcomponentの場合
-                return "M" + d.child.y + "," + d.child.x
-                    + "C" + (d.child.y - getNodeHeight() * 2) + "," + (d.child.x + d.parent.x) / 2
-                    + " " + (d.child.y + getNodeHeight() * 2) + "," + d.parent.x
-                    + " " + d.parent.y + "," + d.parent.x;
-            } else {
-                return "M" + d.child.y + "," + d.child.x
-                    + "C" + (d.child.y + d.parent.y) / 1.8 + "," + d.child.x
-                    + " " + (d.child.y + d.parent.y) / 1.8 + "," + d.parent.x
-                    + " " + d.parent.y + "," + d.parent.x;
-            }
-        });
+        var link = d3.select("#compTreeSVG .treeContainer")
+            .selectAll("." + className)
+            .data(nodeArr);
+        link.exit().remove();
+        var enteredLink = link.enter()
+            .append("path");
+        enteredLink.merge(link)
+            .attr("class", className)
+            .attr("fill", "none")
+            .attr("stroke-width", strokeWidth[type])
+            .attr("stroke-dasharray", strokeDasharray[type])
+            .attr("stroke", strokeColor[type])
+            .attr("d", function (d) {
+                if (Math.abs(d.y - d.parent.y) < getNodeWidth()) { // 同じdepthの場合
+                    return "M" + d.y + "," + d.x
+                        + "C" + (d.y - getNodeHeight() * 2) + "," + (d.x + d.parent.x) / 2
+                        + " " + (d.y + getNodeHeight() * 2) + "," + d.parent.x
+                        + " " + d.parent.y + "," + d.parent.x;
+                } else {
+                    return "M" + d.y + "," + d.x
+                        + "C" + (d.y + d.parent.y) / curve[type] + "," + d.x
+                        + " " + (d.y + d.parent.y) / curve[type] + "," + d.parent.x
+                        + " " + d.parent.y + "," + d.parent.x;
+                }
+            });
+    }
 
     // ノード作成
     var compNode = d3.select("#compTreeSVG .treeContainer")
