@@ -44,11 +44,13 @@ $(document).ready(function () {
     $(".button-collapse").sideNav();
     $("select").material_select();
     // SVG画面サイズ調整
-    hsize = $(window).height() - ($("#top-nav").height() + $("#tree-tab").height());
-    $("main").css("height", hsize + "px");
-    $(window).resize(function () {
-        hsize = $(window).height() - $("#top-nav").height();
+    var resizeSVG = function () {
+        hsize = $(window).height() - ($("#top-nav").height() + $("#tree-tab").height()) - 5;
         $("main").css("height", hsize + "px");
+    }
+    resizeSVG();
+    $(window).resize(function () {
+        resizeSVG();
     });
 });
 
@@ -374,7 +376,7 @@ function makeTree(dataset, autoscale = undefined) {
         updatedNode.on("click", clickFunc[type]);
         updatedNode.call(styleNode);
     }
-    
+
     // 画面サイズに合わせてツリーをオフセット&スケール
     if (autoscale === true) {
         var _is_block = true;
