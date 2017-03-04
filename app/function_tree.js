@@ -57,8 +57,9 @@ $("#create-new").click(function () {
     var _createNew = function () {
         dataset = makeNewComp("Root");
         makeTree(dataset, true);
+        highlightNode();
     }
-    confirmDelNode("", _createNew, "create new");
+    confirmDelNode("", _createNew, "Are you sure you want to create new tree? Unsaved data will be lost.");
 });
 // open file
 $(document).ready(function () {
