@@ -477,14 +477,9 @@ function clickCompNode(node, i, a) {
     // bind name
     d3.select("#comp-edit .node-name form")
         .call(bindName, node);
-
     // bind category
-    bindCategory("comp", node);
-    d3.select("#comp-edit .btn-edit-cat")
-        .on("click", function () {
-            $("#modal-category").modal("open");
-            updateCatSettings(function () { return bindCategory("comp", node) });
-        })
+    d3.select("#comp-edit .category")
+        .call(bindCategory, node, a[i], "comp");
     // bind parent
     var prnt = d3.select("#comp-parent")
         .selectAll("li.collection-item")
@@ -859,14 +854,9 @@ function clickFuncNode(node, i, a) {
     // bind name
     d3.select("#func-edit .node-name form")
         .call(bindName, node);
-
     // bind category
-    bindCategory("func", node);
-    d3.select("#func-edit .btn-edit-cat")
-        .on("click", function () {
-            $("#modal-category").modal("open");
-            updateCatSettings(function () { return bindCategory("func", node) });
-        })
+    d3.select("#func-edit .category")
+        .call(bindCategory, node, a[i], "func");
     // bind comp-node which func is solved by (isb)
     var isb = d3.select("#func-isb")
         .selectAll("li.collection-item")
@@ -1005,14 +995,9 @@ function clickParamNode(node, i, a) {
     // bind definition of parameter
     d3.select("#param-edit .node-name form")
         .call(bindName, node);
-
     // bind category
-    bindCategory("param", node);
-    d3.select("#param-edit .btn-edit-cat")
-        .on("click", function () {
-            $("#modal-category").modal("open");
-            updateCatSettings(function () { return bindCategory("param", node) });
-        })
+    d3.select("#param-edit .category")
+        .call(bindCategory, node, a[i], "param");
     // bind comp-node which parameter is constrained by (icb)
     var icb = d3.select("#param-icb")
         .selectAll("li.collection-item")
@@ -1734,16 +1719,16 @@ function separate(getSub, a, b) {
 };
 
 // bind category
+// use from d3.select.call()
+// selection: "category"-classed <ul> element
 // type: what is editting in pane (comp / func / param)
-function bindCategory(type, node) {
-    var id = "#" + type + "-edit";
+function bindCategory(selection, node, svgNode, type) {
     var catList = ["uncategolized"];
     if (category[type]) {
         catList = catList.concat(category[type]);
     }
-    var sel = d3.select(id)
-        .select(".category select");
-    var cat = sel.selectAll("option")
+    var selElm = selection.select("select");
+    var cat = selElm.selectAll("option")
         .data(catList);
     cat.exit().remove();
     var enteredCat = cat.enter()
@@ -1752,22 +1737,29 @@ function bindCategory(type, node) {
         .attr("value", function (d) { return catList.indexOf(d); })
         .text(function (d) { return d; });
     // set category which has already set on the selected node
-    sel.property("value", function () {
+    selElm.property("value", function () {
         return catList.indexOf(node.data.cat);
     });
     // change category
-    $(id + " .category select").off("change");
-    $(id + " .category select").on("change", function () {
-        if (sel.property("value") != 0) {
-            node.data.cat = catList[sel.property("value")];
+    $(selElm.node()).off("change");
+    $(selElm.node()).on("change", function () {
+        if (selElm.property("value") != 0) {
+            node.data.cat = catList[selElm.property("value")];
         } else {
             node.data.cat = "";
         }
-        d3.select("#comp-tree").selectAll("." + type + "Node")
-            .call(styleNode);
+        d3.select(svgNode).call(styleNode);
     });
     // update materialize select forms
     $("select").material_select();
+    // category edit button
+    selection.select(".btn-edit-cat")
+        .on("click", function () {
+            $("#modal-category").modal("open");
+            updateCatSettings(function () {
+                bindCategory(selection, node, svgNode, type);
+            });
+        })
 }
 
 // update category settings modal content
