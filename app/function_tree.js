@@ -29,13 +29,13 @@ if (1 < document.location.search.length) {
             if (!error) {
                 readData(data);
             }
-            makeTree(dataset);
+            makeTree(dataset, true);
         });
     } else {
-        makeTree(dataset);
+        makeTree(dataset, true);
     }
 } else {
-    makeTree(dataset);
+    makeTree(dataset, true);
 }
 
 $(document).ready(function () {
@@ -56,7 +56,7 @@ $(document).ready(function () {
 $("#create-new").click(function () {
     var _createNew = function () {
         dataset = makeNewComp("Root");
-        makeTree(dataset);
+        makeTree(dataset, true);
     }
     confirmDelNode("", _createNew, "create new");
 });
@@ -77,7 +77,7 @@ $(document).ready(function () {
                 // JSONではないファイルを読込んだとき
                 alert("error: Invalid Data");
             }
-            makeTree(dataset);
+            makeTree(dataset, true);
             setEditPane();
         };
         // Textとしてファイルを読み込む
@@ -120,7 +120,7 @@ $("#show-svg").click(function () {
 });
 // reload tree view
 $("#reload").click(function () {
-    makeTree(dataset);
+    makeTree(dataset, true);
     setEditPane();
 })
 
@@ -141,7 +141,7 @@ function getParamLabelWidth() {
 }
 
 
-function makeTree(dataset, _transform = undefined) {
+function makeTree(dataset, autoscale = undefined) {
     // svg initialize
     d3.select("#compTreeSVG").select("svg").remove();
 
@@ -435,10 +435,7 @@ function makeTree(dataset, _transform = undefined) {
     updatedParamNode.call(styleNode);
 
     // 画面サイズに合わせてツリーをオフセット&スケール
-    if (_transform !== undefined) {
-        d3.select("#compTreeSVG .treeContainer")
-            .attr("transform", _transform);
-    } else {
+    if (autoscale === true) {
         var _is_block = true;
         if ($("#comp-tree").css("display") == "none") {
             _is_block = false;
@@ -563,7 +560,7 @@ function clickCompNode(node, i, a) {
                 prnt.data.children.push(node.data);
                 node.parent.data.children.splice(oldIndex, 1);
                 delJptr(oldPtr);
-                makeTree(dataset);
+                makeTree(dataset, true);
                 setEditPane();
             }
             $("#link-nav-change-comp-parent").sideNav("show");
@@ -605,8 +602,7 @@ function clickCompNode(node, i, a) {
         }
         node.data.children.push(newObj);
         var _jptr = getJptr(node);
-        makeTree(dataset,
-            d3.select("#compTreeSVG .treeContainer").attr("transform"));
+        makeTree(dataset);
         clickCompNode(perseJptr(root, _jptr));
     }
     addChildBtn.on("click", function () {
@@ -642,8 +638,7 @@ function clickCompNode(node, i, a) {
                     var _jptr = node == root ? "" : getJptr(node);
                     _jptr += "/children/" + String(evt.oldIndex - 1);
                     delJptr(_jptr)
-                    makeTree(dataset,
-                        d3.select("#compTreeSVG .treeContainer").attr("transform"));
+                    makeTree(dataset);
                 }
                 confirmDelNode(node.data.children[evt.oldIndex - 1].name, _del);
             }
@@ -665,8 +660,7 @@ function clickCompNode(node, i, a) {
             swapJptr(node, _jptr_old, _jptr_new);
             // データ再構築
             var _jptr = getJptr(node);
-            makeTree(dataset,
-                d3.select("#compTreeSVG .treeContainer").attr("transform"));
+            makeTree(dataset);
             clickCompNode(perseJptr(root, _jptr));
         }
     });
@@ -702,8 +696,7 @@ function clickCompNode(node, i, a) {
         }
         node.data.func.push(newObj);
         var _jptr = getJptr(node);
-        makeTree(dataset,
-            d3.select("#compTreeSVG .treeContainer").attr("transform"));
+        makeTree(dataset);
         clickCompNode(perseJptr(root, _jptr));
     }
     addFuncBtn.on("click", function () {
@@ -740,8 +733,7 @@ function clickCompNode(node, i, a) {
                     delJptr(_jptr);
                     // データ再構築
                     var _jptr = getJptr(node);
-                    makeTree(dataset,
-                        d3.select("#compTreeSVG .treeContainer").attr("transform"));
+                    makeTree(dataset);
                     clickCompNode(perseJptr(root, _jptr));
                 }
                 confirmDelNode(node.data.func[evt.oldIndex - 1].name, _del);
@@ -764,8 +756,7 @@ function clickCompNode(node, i, a) {
             swapJptr(node, _jptr_old, _jptr_new);
             // データ再構築
             var _jptr = getJptr(node);
-            makeTree(dataset,
-                d3.select("#compTreeSVG .treeContainer").attr("transform"));
+            makeTree(dataset);
             clickCompNode(perseJptr(root, _jptr));
         }
     });
@@ -801,8 +792,7 @@ function clickCompNode(node, i, a) {
         }
         node.data.param.push(newObj);
         var _jptr = getJptr(node);
-        makeTree(dataset,
-            d3.select("#compTreeSVG .treeContainer").attr("transform"));
+        makeTree(dataset);
         clickCompNode(perseJptr(root, _jptr));
     }
     addParamBtn.on("click", function () {
@@ -836,8 +826,7 @@ function clickCompNode(node, i, a) {
                     node.data.param.splice(evt.oldIndex - 1, 1);
                     // データ再構築
                     var _jptr = getJptr(node);
-                    makeTree(dataset,
-                        d3.select("#compTreeSVG .treeContainer").attr("transform"));
+                    makeTree(dataset);
                     clickCompNode(perseJptr(root, _jptr));
                 }
                 confirmDelNode(node.data.param[evt.oldIndex - 1].name, _del);
@@ -855,8 +844,7 @@ function clickCompNode(node, i, a) {
             node.data.param[_new - 1] = _t;
             // データ再構築
             var _jptr = getJptr(node);
-            makeTree(dataset,
-                d3.select("#compTreeSVG .treeContainer").attr("transform"));
+            makeTree(dataset);
             clickCompNode(perseJptr(root, _jptr));
         }
     });
@@ -878,8 +866,7 @@ function clickFuncNode(node, i, a) {
         .attr("value", node.data.name)
         .on("change", function () {
             node.data.name = d3.event.target.value;
-            makeTree(dataset,
-                d3.select("#compTreeSVG .treeContainer").attr("transform"));
+            makeTree(dataset);
         });
     // bind category
     bindCategory("func", node);
@@ -967,8 +954,7 @@ function clickFuncNode(node, i, a) {
             $("#side-add-func-parent").sideNav("hide");
             var _jptr = getJptr(node.isb,
                 "/func/" + node.isb.func.indexOf(node));
-            makeTree(dataset,
-                d3.select("#compTreeSVG .treeContainer").attr("transform"));
+            makeTree(dataset);
             clickFuncNode(perseJptr(root, _jptr));
         });
         $("#side-add-func-parent").sideNav("show");
@@ -987,8 +973,7 @@ function clickFuncNode(node, i, a) {
                 item.parentNode.removeChild(item); // remove sortable item
                 // 子要素の削除
                 node.data.parents.splice(evt.oldIndex - 1, 1);
-                makeTree(dataset,
-                    d3.select("#compTreeSVG .treeContainer").attr("transform"));
+                makeTree(dataset);
             }
         },
         // drag後の処理
@@ -999,8 +984,7 @@ function clickFuncNode(node, i, a) {
             node.data.parents[_old - 1] = node.data.parents[_new - 1];
             node.data.parents[_new - 1] = _oldPrnt;
             // データ再構築
-            makeTree(dataset,
-                d3.select("#compTreeSVG .treeContainer").attr("transform"));
+            makeTree(dataset);
         }
     });
 
@@ -1032,8 +1016,7 @@ function clickParamNode(node, i, a) {
         .attr("value", node.data.name)
         .on("change", function () {
             node.data.name = d3.event.target.value;
-            makeTree(dataset,
-                d3.select("#compTreeSVG .treeContainer").attr("transform"));
+            makeTree(dataset);
         });
     // bind category
     bindCategory("param", node);
@@ -1121,8 +1104,7 @@ function clickParamNode(node, i, a) {
             $("#side-func-parent").sideNav("hide");
             var thisPtr = getJptr(node.icb,
                 "/param/" + node.icb.param.indexOf(node));
-            makeTree(dataset,
-                d3.select("#compTreeSVG .treeContainer").attr("transform"));
+            makeTree(dataset);
             clickParamNode(perseJptr(root, thisPtr));
         });
         $("#side-add-param-parent").sideNav("show");
@@ -1141,8 +1123,7 @@ function clickParamNode(node, i, a) {
                 item.parentNode.removeChild(item); // remove sortable item
                 // 子要素の削除
                 node.data.parents.splice(evt.oldIndex - 1, 1);
-                makeTree(dataset,
-                    d3.select("#compTreeSVG .treeContainer").attr("transform"));
+                makeTree(dataset);
             }
         },
         // drag後の処理
@@ -1153,8 +1134,7 @@ function clickParamNode(node, i, a) {
             node.data.parents[_old - 1] = node.data.parents[_new - 1];
             node.data.parents[_new - 1] = _oldPrnt;
             // データ再構築
-            makeTree(dataset,
-                d3.select("#compTreeSVG .treeContainer").attr("transform"));
+            makeTree(dataset);
         }
     });
 
@@ -2008,4 +1988,8 @@ function bindNote(selection, node, svgNode) {
         node.data.note = selection.property("value");
         d3.select(svgNode).call(styleNode);
     })
+}
+
+function bindName(selection, node) {
+
 }
