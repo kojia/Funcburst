@@ -475,13 +475,9 @@ function clickCompNode(node, i, a) {
     highlightNode(node);
 
     // bind name
-    document.compName.reset();  // reset form
-    d3.select("#comp-edit #name")
-        .attr("value", node.data.name)
-        .on("change", function () {
-            node.data.name = d3.event.target.value;
-            makeTree(dataset);
-        });
+    d3.select("#comp-edit .node-name form")
+        .call(bindName, node);
+
     // bind category
     bindCategory("comp", node);
     d3.select("#comp-edit .btn-edit-cat")
@@ -861,13 +857,9 @@ function clickFuncNode(node, i, a) {
     highlightNode(node);
 
     // bind name
-    document.funcName.reset();  // reset form
-    d3.select("#func-edit #funcName")
-        .attr("value", node.data.name)
-        .on("change", function () {
-            node.data.name = d3.event.target.value;
-            makeTree(dataset);
-        });
+    d3.select("#func-edit .node-name form")
+        .call(bindName, node);
+
     // bind category
     bindCategory("func", node);
     d3.select("#func-edit .btn-edit-cat")
@@ -1011,13 +1003,9 @@ function clickParamNode(node, i, a) {
     highlightNode(node);
 
     // bind definition of parameter
-    document.paramName.reset();  // reset form
-    d3.select("#paramName")
-        .attr("value", node.data.name)
-        .on("change", function () {
-            node.data.name = d3.event.target.value;
-            makeTree(dataset);
-        });
+    d3.select("#param-edit .node-name form")
+        .call(bindName, node);
+
     // bind category
     bindCategory("param", node);
     d3.select("#param-edit .btn-edit-cat")
@@ -1990,6 +1978,13 @@ function bindNote(selection, node, svgNode) {
     })
 }
 
+// selection: d3-selector for <form>
 function bindName(selection, node) {
-
+    $(selection.node())[0].reset();
+    selection.select("input")
+        .attr("value", node.data.name)
+        .on("change", function () {
+            node.data.name = d3.event.target.value;
+            makeTree(dataset);
+        });
 }
