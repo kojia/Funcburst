@@ -570,10 +570,7 @@ function clickCompNode(node, i, a) {
     // add remove button for children
     d3.select("#comp-children")
         .selectAll("li.collection-item")
-        .append("span").attr("class", "suffix")
-        .append("i")
-        .attr("class", "js-remove tiny material-icons")
-        .text("remove_circle_outline");
+        .call(addRemoveIcon);
     // insert add-child button
     var addChildBtn = d3.select("#comp-children")
         .append("li")
@@ -667,10 +664,7 @@ function clickCompNode(node, i, a) {
         .attr("class", "collection-item drag")
         .text(function (d) { return d.data.name; });
     // add remove button for func-Node
-    updatedFunc.append("span").attr("class", "suffix")
-        .append("i")
-        .attr("class", "js-remove tiny material-icons")
-        .text("remove_circle_outline");
+    updatedFunc.call(addRemoveIcon);
     // insert add-func-node button
     var addFuncBtn = d3.select("#comp-func")
         .append("li").attr("class", "collection-item add")
@@ -763,10 +757,7 @@ function clickCompNode(node, i, a) {
         .attr("class", "collection-item drag")
         .text(function (d) { return d.data.name; });
     // add remove button for param-Node
-    updatedParam.append("span").attr("class", "suffix")
-        .append("i")
-        .attr("class", "js-remove tiny material-icons")
-        .text("remove_circle_outline");
+    updatedParam.call(addRemoveIcon);
     // insert add-param-node button
     var addParamBtn = d3.select("#comp-param")
         .append("li").attr("class", "collection-item add")
@@ -881,10 +872,7 @@ function clickFuncNode(node, i, a) {
         .attr("class", "collection-item drag")
         .text(function (d) { return d === null ? "no parent" : d.data.name; });
     // add remove button to each parent
-    updatedPrnt.append("span").attr("class", "suffix")
-        .append("i")
-        .attr("class", "js-remove tiny material-icons")
-        .text("remove_circle_outline");
+    updatedPrnt.call(addRemoveIcon);
     // insert add-parent button
     var addParentBtn = d3.select("#func-parents")
         .append("li").attr("class", "collection-item add")
@@ -1022,10 +1010,7 @@ function clickParamNode(node, i, a) {
         .attr("class", "collection-item drag")
         .text(function (d) { return d === null ? "no parent" : d.data.name; });
     // add remove button to each parent
-    updatedPrnt.append("span").attr("class", "suffix")
-        .append("i")
-        .attr("class", "js-remove tiny material-icons")
-        .text("remove_circle_outline");
+    updatedPrnt.call(addRemoveIcon);
     // insert add-parent button
     var addParentBtn = d3.select("#param-parents")
         .append("li").attr("class", "collection-item add")
@@ -1789,10 +1774,7 @@ function updateCatSettings(updateEditPane) {
         enteredCat.select("div")
             .append("input");
         // remove icon
-        enteredCat.append("span").attr("class", "suffix")
-            .append("i")
-            .attr("class", "js-remove material-icons")
-            .text("remove_circle_outline");
+        enteredCat.call(addRemoveIcon);
         var updatedCat = enteredCat.merge(cat)
             .attr("class", "collection-item drag");
         // category color mark
@@ -1849,7 +1831,6 @@ function updateCatSettings(updateEditPane) {
             animation: 100,
             draggable: ".collection-item.drag",
             onUpdate: function (evt) {  // behavior on drag
-                console.log(evt.oldIndex + "   " + evt.newIndex);
                 var _ = category[type][evt.oldIndex - 1];
                 category[type][evt.oldIndex - 1] = category[type][evt.newIndex - 1];
                 category[type][evt.newIndex - 1] = _;
@@ -1979,4 +1960,13 @@ function bindName(selection, node) {
             node.data.name = d3.event.target.value;
             makeTree(dataset);
         });
+}
+
+// add suffix remove icon for collection-item
+// selection: d3-selector for "collection-item" classed <li> element
+function addRemoveIcon(selection) {
+    selection.append("span").attr("class", "suffix")
+        .append("i")
+        .attr("class", "js-remove material-icons")
+        .text("remove_circle_outline");
 }
