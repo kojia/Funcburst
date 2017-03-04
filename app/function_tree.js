@@ -142,7 +142,6 @@ function getParamLabelWidth() {
 
 
 function makeTree(dataset, _transform = undefined) {
-    console.log(dataset);
     // svg initialize
     d3.select("#compTreeSVG").select("svg").remove();
 
@@ -378,14 +377,14 @@ function makeTree(dataset, _transform = undefined) {
         .data(root.descendants());
     compNode.exit().remove();
     var enteredCompNode = compNode.enter()
-        .append("g");
+        .append("g").attr("class", "compNode");
     enteredCompNode.append("circle")
         .attr("r", 4)
         .attr("fill", "teal");
     enteredCompNode.append("text");
     var updatedCompNode = enteredCompNode.merge(compNode);
     // ノードに円とテキストを表示
-    updatedCompNode.attr("class", "compNode")
+    updatedCompNode
         .attr("transform", function (d) {
             return "translate(" + d.y + "," + d.x + ")";
         });
@@ -1390,7 +1389,7 @@ function makeNewComp(name) {
     dic["func"] = [];
     dic["param"] = [];
     dic["children"] = [];
-    dic["note"] = [];
+    dic["note"] = "";
     return dic;
 }
 
@@ -1400,7 +1399,7 @@ function makeNewFunc(name) {
     dic["name"] = name;
     dic["cat"] = "";
     dic["parents"] = [];
-    dic["note"] = [];
+    dic["note"] = "";
     return dic;
 }
 
@@ -1410,7 +1409,7 @@ function makeNewParam(name) {
     dic["name"] = name;
     dic["cat"] = "";
     dic["parents"] = [];
-    dic["note"] = [];
+    dic["note"] = "";
     return dic;
 }
 
@@ -1954,6 +1953,18 @@ function styleNode(selection) {
         })
         .attr("stroke-width", "0.7px")
         .attr("dominant-baseline", baseline[type]);
+    // add tooltip displaying note
+    selection.classed("note-tooltip", function (d, i, a) {
+        if (d.data.note) {
+            $(a[i]).tooltip({ tooltip: d.data.note, delay: 50, position: "left" });
+            return true;
+        } else {
+            if (d3.select(this).classed("note-tooltip")) {
+                $(a[i]).tooltip("remove");
+            }
+            return false;
+        }
+    });
 }
 
 // get category color
