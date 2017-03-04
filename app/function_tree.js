@@ -603,7 +603,7 @@ function clickCompNode(node, i, a) {
         node.data.children.push(newObj);
         var _jptr = getJptr(node);
         makeTree(dataset);
-        clickCompNode(perseJptr(root, _jptr));
+        clickCompNode(perseJptr(root, _jptr), i, a);
     }
     addChildBtn.on("click", function () {
         $("#modal-comp-add-child").modal("open");
@@ -661,7 +661,7 @@ function clickCompNode(node, i, a) {
             // データ再構築
             var _jptr = getJptr(node);
             makeTree(dataset);
-            clickCompNode(perseJptr(root, _jptr));
+            clickCompNode(perseJptr(root, _jptr), i, a);
         }
     });
 
@@ -697,7 +697,7 @@ function clickCompNode(node, i, a) {
         node.data.func.push(newObj);
         var _jptr = getJptr(node);
         makeTree(dataset);
-        clickCompNode(perseJptr(root, _jptr));
+        clickCompNode(perseJptr(root, _jptr), i, a);
     }
     addFuncBtn.on("click", function () {
         $("#modal-comp-add-func").modal("open");
@@ -734,7 +734,7 @@ function clickCompNode(node, i, a) {
                     // データ再構築
                     var _jptr = getJptr(node);
                     makeTree(dataset);
-                    clickCompNode(perseJptr(root, _jptr));
+                    clickCompNode(perseJptr(root, _jptr), i, a);
                 }
                 confirmDelNode(node.data.func[evt.oldIndex - 1].name, _del);
             }
@@ -757,7 +757,7 @@ function clickCompNode(node, i, a) {
             // データ再構築
             var _jptr = getJptr(node);
             makeTree(dataset);
-            clickCompNode(perseJptr(root, _jptr));
+            clickCompNode(perseJptr(root, _jptr), i, a);
         }
     });
 
@@ -793,7 +793,7 @@ function clickCompNode(node, i, a) {
         node.data.param.push(newObj);
         var _jptr = getJptr(node);
         makeTree(dataset);
-        clickCompNode(perseJptr(root, _jptr));
+        clickCompNode(perseJptr(root, _jptr), i, a);
     }
     addParamBtn.on("click", function () {
         $("#modal-comp-add-param").modal("open");
@@ -827,7 +827,7 @@ function clickCompNode(node, i, a) {
                     // データ再構築
                     var _jptr = getJptr(node);
                     makeTree(dataset);
-                    clickCompNode(perseJptr(root, _jptr));
+                    clickCompNode(perseJptr(root, _jptr), i, a);
                 }
                 confirmDelNode(node.data.param[evt.oldIndex - 1].name, _del);
             }
@@ -845,7 +845,7 @@ function clickCompNode(node, i, a) {
             // データ再構築
             var _jptr = getJptr(node);
             makeTree(dataset);
-            clickCompNode(perseJptr(root, _jptr));
+            clickCompNode(perseJptr(root, _jptr), i, a);
         }
     });
     // bind note
@@ -955,7 +955,7 @@ function clickFuncNode(node, i, a) {
             var _jptr = getJptr(node.isb,
                 "/func/" + node.isb.func.indexOf(node));
             makeTree(dataset);
-            clickFuncNode(perseJptr(root, _jptr));
+            clickFuncNode(perseJptr(root, _jptr), i, a);
         });
         $("#side-add-func-parent").sideNav("show");
     });
@@ -1105,7 +1105,7 @@ function clickParamNode(node, i, a) {
             var thisPtr = getJptr(node.icb,
                 "/param/" + node.icb.param.indexOf(node));
             makeTree(dataset);
-            clickParamNode(perseJptr(root, thisPtr));
+            clickParamNode(perseJptr(root, thisPtr), i, a);
         });
         $("#side-add-param-parent").sideNav("show");
     });
