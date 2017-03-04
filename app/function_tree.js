@@ -471,7 +471,7 @@ function tspanStringify(strArr) {
 }
 
 // componentノードクリック時の挙動
-function clickCompNode(node) {
+function clickCompNode(node, i, a) {
     console.log(node);
 
     setEditPane("comp");
@@ -862,11 +862,11 @@ function clickCompNode(node) {
     });
     // bind note
     d3.select("#comp-edit").select(".note textarea")
-        .call(bindNote, node);
+        .call(bindNote, node, a[i]);
 }
 
 // func-nodeクリック時の挙動
-function clickFuncNode(node) {
+function clickFuncNode(node, i, a) {
     console.log(node);
 
     setEditPane("func");
@@ -1016,11 +1016,11 @@ function clickFuncNode(node) {
 
     // bind note
     d3.select("#func-edit").select(".note textarea")
-        .call(bindNote, node);
+        .call(bindNote, node, a[i]);
 }
 
 // param-nodeクリック時の挙動
-function clickParamNode(node) {
+function clickParamNode(node, i, a) {
     console.log(node);
 
     setEditPane("param")
@@ -1160,7 +1160,7 @@ function clickParamNode(node) {
 
     // bind note
     d3.select("#param-edit").select(".note textarea")
-        .call(bindNote, node);
+        .call(bindNote, node, a[i]);
 }
 
 // perse function means tree from component tree
@@ -1929,8 +1929,11 @@ function styleNode(selection) {
     if (selection._groups[0].length === 0) {
         return;
     }
-    var nodeType = selection.attr("class");
-    var type = nodeType.substr(0, nodeType.length - 4);
+    var nodeType = selection.attr("class")
+        .split(" ").filter(function (e) {
+            return /.*Node$/.test(e);
+        });;
+    var type = nodeType[0].substr(0, nodeType.length - 4);
     var fontSize = {
         "comp": getNodeHeight() + "px",
         "func": getNodeHeight() * 0.9 + "px",
@@ -1953,6 +1956,7 @@ function styleNode(selection) {
         })
         .attr("stroke-width", "0.7px")
         .attr("dominant-baseline", baseline[type]);
+
     // add tooltip displaying note
     selection.classed("note-tooltip", function (d, i, a) {
         if (d.data.note) {
@@ -1990,7 +1994,7 @@ function getCatColor(catStr, type) {
     }
 }
 
-function bindNote(selection, node) {
+function bindNote(selection, node, svgNode) {
     var _note = "";
     if (node.data.note) {
         _note = node.data.note;
@@ -2002,5 +2006,6 @@ function bindNote(selection, node) {
     // save data if editted
     selection.on("change", function () {
         node.data.note = selection.property("value");
+        d3.select(svgNode).call(styleNode);
     })
 }
