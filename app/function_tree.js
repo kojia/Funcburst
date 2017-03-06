@@ -320,7 +320,7 @@ function makeTree(dataset, autoscale = undefined) {
         };
         var curve = { "comp": 2, "func": 1.8, "param": 1.8 }
 
-        var link = d3.select("#compTreeSVG .treeContainer")
+        var link = d3.select("#compTreeSVG .treeContainer .link")
             .selectAll("." + className)
             .data(nodeArr);
         link.exit().remove();
@@ -356,7 +356,7 @@ function makeTree(dataset, autoscale = undefined) {
         var circleRadius = { "comp": 4, "func": 3, "param": 3 };
         var circleColor = { "comp": "teal", "func": "red", "param": "orange" };
         var clickFunc = { "comp": clickCompNode, "func": clickFuncNode, "param": clickParamNode };
-        var node = d3.select("#compTreeSVG .treeContainer")
+        var node = d3.select("#compTreeSVG .treeContainer .node")
             .selectAll("." + className)
             .data(nodeArr);
         node.exit().remove();
