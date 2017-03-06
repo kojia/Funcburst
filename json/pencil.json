@@ -1,0 +1,190 @@
+{
+  "data": {
+    "name": "Pencil",
+    "cat": "",
+    "func": [
+      {
+        "name": "Draw line",
+        "cat": "Basic Functrion",
+        "parents": [],
+        "note": "Force affects line blackness and thickness"
+      }
+    ],
+    "param": [],
+    "children": [
+      {
+        "name": "Core",
+        "cat": "",
+        "func": [
+          {
+            "name": "Solidify pigment",
+            "cat": "",
+            "parents": [
+              "/func/0"
+            ],
+            "note": ""
+          },
+          {
+            "name": "Adjust tone",
+            "cat": "",
+            "parents": [
+              "/func/0"
+            ],
+            "note": ""
+          }
+        ],
+        "param": [
+          {
+            "name": "Ratio of graphite to clay",
+            "cat": "Recipe",
+            "parents": [
+              "/children/0/func/1",
+              "/children/0/func/0"
+            ],
+            "note": ""
+          },
+          {
+            "name": "Diameter",
+            "cat": "Mechanical",
+            "parents": [
+              "/func/0"
+            ],
+            "note": ""
+          }
+        ],
+        "children": [
+          {
+            "name": "Graphite",
+            "cat": "",
+            "func": [
+              {
+                "name": "Adhere pigment to paper",
+                "cat": "Basic Functrion",
+                "parents": [
+                  "/func/0"
+                ],
+                "note": ""
+              }
+            ],
+            "param": [],
+            "children": [],
+            "note": ""
+          },
+          {
+            "name": "Clay",
+            "cat": "",
+            "func": [
+              {
+                "name": "Solidify",
+                "cat": "",
+                "parents": [
+                  "/children/0/func/0"
+                ],
+                "note": ""
+              }
+            ],
+            "param": [],
+            "children": [],
+            "note": ""
+          }
+        ],
+        "note": ""
+      },
+      {
+        "name": "Cylinder",
+        "cat": "",
+        "func": [
+          {
+            "name": "Protect core",
+            "cat": "",
+            "parents": [
+              "/func/0"
+            ],
+            "note": ""
+          },
+          {
+            "name": "Make it easy to hold",
+            "cat": "",
+            "parents": [
+              "/func/0"
+            ],
+            "note": ""
+          },
+          {
+            "name": "Expose a tip of core",
+            "cat": "",
+            "parents": [
+              "/func/0"
+            ],
+            "note": ""
+          },
+          {
+            "name": "Can be shaved off",
+            "cat": "",
+            "parents": [
+              "/children/1/func/2"
+            ],
+            "note": ""
+          }
+        ],
+        "param": [
+          {
+            "name": "Shape",
+            "cat": "Mechanical",
+            "parents": [
+              "/children/1/func/1"
+            ],
+            "note": ""
+          },
+          {
+            "name": "Diameter",
+            "cat": "Mechanical",
+            "parents": [
+              "/children/1/func/1",
+              "/children/1/func/0"
+            ],
+            "note": ""
+          },
+          {
+            "name": "Material strength",
+            "cat": "Physical property",
+            "parents": [
+              "/children/1/func/0",
+              "/children/1/func/3"
+            ],
+            "note": ""
+          }
+        ],
+        "children": [],
+        "note": ""
+      },
+      {
+        "name": "Paint",
+        "cat": "",
+        "func": [
+          {
+            "name": "Display information",
+            "cat": "",
+            "parents": [],
+            "note": ""
+          }
+        ],
+        "param": [],
+        "children": [],
+        "note": ""
+      }
+    ],
+    "note": ""
+  },
+  "category": {
+    "comp": [],
+    "func": [
+      "Basic Functrion"
+    ],
+    "param": [
+      "Recipe",
+      "Mechanical",
+      "Physical property"
+    ]
+  }
+}
