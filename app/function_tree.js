@@ -400,14 +400,20 @@ function ComponentTree(data) {
         }
 
         // ノード作成
-        drawNode(this.root.descendants(), "comp");
-        drawNode(this.root.funcDescendants(), "func");
-        drawNode(this.root.paramDescendants(), "param");
-        function drawNode(nodeArr, type) {
+        var drawNode = function (nodeArr, type, root) {
             var className = type + "Node";
             var circleRadius = { "comp": 4, "func": 3, "param": 3 };
             var circleColor = { "comp": "teal", "func": "red", "param": "orange" };
-            var clickFunc = { "comp": clickCompNode, "func": clickFuncNode, "param": clickParamNode };
+            var _clickCompNode = function (node, i, a) {
+                return clickCompNode(node, i, a, root);
+            }
+            var _clickFuncNode = function (node, i, a) {
+                return clickFuncNode(node, i, a, root);
+            }
+            var _clickParamNode = function (node, i, a) {
+                return clickParamNode(node, i, a, root);
+            }
+            var clickFunc = { "comp": _clickCompNode, "func": _clickFuncNode, "param": _clickParamNode };
             var node = d3.select("#compTreeSVG .treeContainer .node")
                 .selectAll("." + className)
                 .data(nodeArr);
@@ -428,6 +434,9 @@ function ComponentTree(data) {
             updatedNode.on("click", clickFunc[type]);
             updatedNode.call(styleNode);
         }
+        drawNode(this.root.descendants(), "comp", this.root);
+        drawNode(this.root.funcDescendants(), "func", this.root);
+        drawNode(this.root.paramDescendants(), "param", this.root);
     };
 
     // fit tree to SVG field by offset and scale adjustment
@@ -475,9 +484,9 @@ function tspanStringify(strArr) {
 }
 
 // componentノードクリック時の挙動
-function clickCompNode(node, i, a) {
+function clickCompNode(node, i, a, root) {
     console.log(node);
-
+    var root = root;
     setEditPane("comp");
     highlightNode(node);
 
@@ -557,7 +566,7 @@ function clickCompNode(node, i, a) {
                 }
                 prnt.data.children.push(node.data);
                 node.parent.data.children.splice(oldIndex, 1);
-                delJptr(oldPtr);
+                delJptr(oldPtr, root);
                 trees.reload(fit = true);
                 setEditPane();
             }
@@ -597,8 +606,8 @@ function clickCompNode(node, i, a) {
         }
         node.data.children.push(newObj);
         var _jptr = getJptr(node);
-        trees.reload();
-        // clickCompNode(parseJptr(root, _jptr), i, a);
+        trees.reload(fit = true);
+        clickCompNode(parseJptr(root, _jptr), i, a, root);
     }
     addChildBtn.on("click", function () {
         $("#modal-comp-add-child").modal("open");
@@ -632,9 +641,9 @@ function clickCompNode(node, i, a) {
                     // 子Node削除によりjson pointerが繰り上がる
                     var _jptr = node == root ? "" : getJptr(node);
                     _jptr += "/children/" + String(evt.oldIndex - 1);
-                    delJptr(_jptr)
-                    tree.reload();
-                    // clickCompNode(parseJptr(root, getJptr(node)), i, a)
+                    delJptr(_jptr, root)
+                    trees.reload();
+                    clickCompNode(parseJptr(root, getJptr(node)), i, a, root)
                 }
                 confirmDelNode(node.data.children[evt.oldIndex - 1].name, _del);
             }
@@ -657,7 +666,7 @@ function clickCompNode(node, i, a) {
             // データ再構築
             var _jptr = getJptr(node);
             trees.reload();
-            // clickCompNode(parseJptr(root, _jptr), i, a);
+            clickCompNode(parseJptr(root, _jptr), i, a, root);
         }
     });
 
@@ -690,7 +699,7 @@ function clickCompNode(node, i, a) {
         node.data.func.push(newObj);
         var _jptr = getJptr(node);
         trees.reload();
-        // clickCompNode(parseJptr(root, _jptr), i, a);
+        clickCompNode(parseJptr(root, _jptr), i, a, root);
     }
     addFuncBtn.on("click", function () {
         $("#modal-comp-add-func").modal("open");
@@ -723,11 +732,11 @@ function clickCompNode(node, i, a) {
                     node.data.func.splice(evt.oldIndex - 1, 1);
                     // 削除したfunc-nodeを親としているjson pointerを削除
                     var _jptr = getJptr(node) + "/func/" + String(evt.oldIndex - 1);
-                    delJptr(_jptr);
+                    delJptr(_jptr, root);
                     // データ再構築
                     var _jptr = getJptr(node);
                     trees.reload();
-                    // clickCompNode(parseJptr(root, _jptr), i, a);
+                    clickCompNode(parseJptr(root, _jptr), i, a, root);
                 }
                 confirmDelNode(node.data.func[evt.oldIndex - 1].name, _del);
             }
@@ -750,7 +759,7 @@ function clickCompNode(node, i, a) {
             // データ再構築
             var _jptr = getJptr(node);
             trees.reload();
-            // clickCompNode(parseJptr(root, _jptr), i, a);
+            clickCompNode(parseJptr(root, _jptr), i, a, root);
         }
     });
 
@@ -783,7 +792,7 @@ function clickCompNode(node, i, a) {
         node.data.param.push(newObj);
         var _jptr = getJptr(node);
         trees.reload();
-        // clickCompNode(parseJptr(root, _jptr), i, a);
+        clickCompNode(parseJptr(root, _jptr), i, a, root);
     }
     addParamBtn.on("click", function () {
         $("#modal-comp-add-param").modal("open");
@@ -817,7 +826,7 @@ function clickCompNode(node, i, a) {
                     // データ再構築
                     var _jptr = getJptr(node);
                     trees.reload();
-                    // clickCompNode(parseJptr(root, _jptr), i, a);
+                    clickCompNode(parseJptr(root, _jptr), i, a, root);
                 }
                 confirmDelNode(node.data.param[evt.oldIndex - 1].name, _del);
             }
@@ -835,7 +844,7 @@ function clickCompNode(node, i, a) {
             // データ再構築
             var _jptr = getJptr(node);
             trees.reload();
-            // clickCompNode(parseJptr(root, _jptr), i, a);
+            clickCompNode(parseJptr(root, _jptr), i, a, root);
         }
     });
     // bind note
@@ -1373,7 +1382,7 @@ function getJptr(node, ptr = "") {
 // delete json pointer
 // jptr: json pointer to delete
 // node: root node for searching json pointer
-function delJptr(jptr, node = root) {
+function delJptr(jptr, node) {
     var argIndex = jptr.match(/\d+$/)[0];  // indexを切り出し
     var jptrLeft = jptr.slice(0, -argIndex.length);
     var re = RegExp("^" + jptrLeft)
