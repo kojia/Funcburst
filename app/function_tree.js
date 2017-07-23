@@ -17,16 +17,16 @@ function writeData() {
 readData();
 
 // tree interface
-var ITree = function () {
-    p = ITree.prototype;
-    p.reload = function () { };
-    p.activate = function () { };
-}
+function ITree() { }
+p = ITree.prototype;
+p.reload = function () { };
+p.activate = function () { };
 
 // tree instances controller
 var Trees = function (data) {
     this.compTree = new ComponentTree(data);
-
+    console.log(this.compTree);
+    // prototype
     p = Trees.prototype;
     // set data
     p.setData = function (data) {
@@ -185,6 +185,10 @@ function getParamLabelWidth() {
 
 
 function ComponentTree(data) {
+    // inherit
+    ComponentTree.prototype = Object.create(ITree.prototype);
+    ComponentTree.prototype.constructor = ComponentTree;
+
     // json data
     this.data = data;
     // tree root
@@ -207,8 +211,6 @@ function ComponentTree(data) {
         .call(this.zoom);
 
     // prototype method
-    ComponentTree.prototype = Object.create(ITree.prototype);  // inherit
-    ComponentTree.prototype.constructor = ComponentTree;
     var p = ComponentTree.prototype;
 
     // hierararchlize data
@@ -470,9 +472,7 @@ function ComponentTree(data) {
             this.fit();
         }
     }
-
 }
-
 
 function tspanStringify(strArr) {
     var _html = "";
@@ -1116,6 +1116,31 @@ function clickParamNode(node, i, a) {
     // bind note
     d3.select("#param-edit").select(".note textarea")
         .call(bindNote, node, a[i]);
+}
+
+
+// Prototype Object for Function Means Tree
+function FMTree(data) {
+    // json data
+    this.data = data;
+    // tree root
+    this.root = undefined;
+    // treeの拡大縮小設定
+    this.zoom = d3.zoom()
+        .scaleExtent([.2, 10])
+        // .translateExtent(
+        // [[$("#compTreeSVG").width() * -2, $("#compTreeSVG").height() * -2],
+        // [$("#compTreeSVG").width() * 2, $("#compTreeSVG").height() * 2]])
+        .on("zoom", zoomed);
+    function zoomed() {
+        d3.select("#FMTreeSVG .treeContainer")
+            .attr("transform", d3.event.transform);
+    }
+    // treeを入れるコンテナを作成
+    this.svg = d3.select("#FMTreeSVG")
+        .attr("width", "100%")
+        .attr("height", "100%")
+        .call(this.zoom);
 }
 
 // perse function means tree from component tree
