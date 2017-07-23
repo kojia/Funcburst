@@ -16,11 +16,84 @@ function writeData() {
 }
 readData();
 
-// tree interface
-function ITree() { }
-p = ITree.prototype;
-p.reload = function () { };
-p.activate = function () { };
+// Abstract Tree object
+function AbsTree(data = undefined) {
+    if(data){
+        this.data = data;
+    }
+}
+(function () {
+    p = AbsTree.prototype;
+    p.root = undefined;
+    p.data = undefined;
+    p.reload = function () { };
+    p.activate = function () { };
+    // hierararchlize data
+    p.hierarchlize = function () {
+        this.root = d3.hierarchy(this.data, function (d) {
+            return d["children"];
+        });
+        this.root.eachBefore(function (node) {
+            // set component-node name label string array to fit node width
+            node.label = splitStrByWidth(node.data.name, getCompLabelWidth());
+            // set function-node data
+            node.func = Array();  // create array for func-node
+            node.data.func.forEach(function (funcElm, i) {
+                node.func.push({
+                    "data": funcElm,
+                    "isb": node,  // func-node is solved by solution "component-node"
+                    "label": splitStrByWidth(funcElm.name, getFuncLabelWidth())
+                });
+            });
+            // set parameter-node data
+            node.param = Array();  // create array for param-node
+            if (node.data.param == undefined) {
+                node.data.param = Array();
+            }
+            node.data.param.forEach(function (paramElm, i) {
+                node.param.push({
+                    "data": paramElm,
+                    "icb": node,  // param-node is constrained by solution "component-node"
+                    "label": splitStrByWidth(paramElm.name, getParamLabelWidth())
+                });
+            });
+        });
+
+        // func node のarrayを返す関数
+        this.root.funcDescendants = function () {
+            return this.descendants()
+                .reduce(function (a, b) { return a.concat(b.func); }, Array());
+        };
+        // func node の親子ペアのリストを返す
+        this.root.funcParentChild = function () {
+            return this.funcDescendants()
+                .filter(function (elm) { return elm.parents.length; })
+                .map(function (elm) {
+                    return elm.parents.map(function (prnt) {
+                        return { "x": elm.x, "y": elm.y, "parent": prnt }
+                    })
+                })
+                .reduce(function (a, b) { return a.concat(b); }, Array());
+        }
+
+        // param-node のarrayを返す関数
+        this.root.paramDescendants = function () {
+            return this.descendants()
+                .reduce(function (a, b) { return a.concat(b.param); }, Array());
+        };
+        // param-node を子に持つペアのリストを返す
+        this.root.paramParentChild = function () {
+            return this.paramDescendants()
+                .filter(function (elm) { return elm.parents.length; })
+                .map(function (elm) {
+                    return elm.parents.map(function (prnt) {
+                        return { "x": elm.x, "y": elm.y, "parent": prnt }
+                    })
+                })
+                .reduce(function (a, b) { return a.concat(b); }, Array());
+        }
+    };
+}())
 
 // tree instances controller
 var Trees = function (data) {
@@ -37,7 +110,7 @@ var Trees = function (data) {
         if ($("#comp-tree").css("display") == "block") {
             return this.compTree;
         }
-        return new ITree();
+        return new AbsTree();
     };
     // headerのreloadがclickされたときの挙動
     p.reload = function (fit = undefined) {
@@ -186,13 +259,11 @@ function getParamLabelWidth() {
 
 function ComponentTree(data) {
     // inherit
-    ComponentTree.prototype = Object.create(ITree.prototype);
+    ComponentTree.prototype = Object.create(AbsTree.prototype);
     ComponentTree.prototype.constructor = ComponentTree;
 
-    // json data
-    this.data = data;
-    // tree root
-    this.root = undefined;
+    AbsTree.call(this, data);
+
     // treeの拡大縮小設定
     this.zoom = d3.zoom()
         .scaleExtent([.2, 10])
@@ -212,73 +283,7 @@ function ComponentTree(data) {
 
     // prototype method
     var p = ComponentTree.prototype;
-
-    // hierararchlize data
-    p.hierarchlize = function () {
-        this.root = d3.hierarchy(this.data, function (d) {
-            return d["children"];
-        });
-        this.root.eachBefore(function (node) {
-            // set component-node name label string array to fit node width
-            node.label = splitStrByWidth(node.data.name, getCompLabelWidth());
-            // set function-node data
-            node.func = Array();  // create array for func-node
-            node.data.func.forEach(function (funcElm, i) {
-                node.func.push({
-                    "data": funcElm,
-                    "isb": node,  // func-node is solved by solution "component-node"
-                    "label": splitStrByWidth(funcElm.name, getFuncLabelWidth())
-                });
-            });
-            // set parameter-node data
-            node.param = Array();  // create array for param-node
-            if (node.data.param == undefined) {
-                node.data.param = Array();
-            }
-            node.data.param.forEach(function (paramElm, i) {
-                node.param.push({
-                    "data": paramElm,
-                    "icb": node,  // param-node is constrained by solution "component-node"
-                    "label": splitStrByWidth(paramElm.name, getParamLabelWidth())
-                });
-            });
-        });
-
-        // func node のarrayを返す関数
-        this.root.funcDescendants = function () {
-            return this.descendants()
-                .reduce(function (a, b) { return a.concat(b.func); }, Array());
-        };
-        // func node の親子ペアのリストを返す
-        this.root.funcParentChild = function () {
-            return this.funcDescendants()
-                .filter(function (elm) { return elm.parents.length; })
-                .map(function (elm) {
-                    return elm.parents.map(function (prnt) {
-                        return { "x": elm.x, "y": elm.y, "parent": prnt }
-                    })
-                })
-                .reduce(function (a, b) { return a.concat(b); }, Array());
-        }
-
-        // param-node のarrayを返す関数
-        this.root.paramDescendants = function () {
-            return this.descendants()
-                .reduce(function (a, b) { return a.concat(b.param); }, Array());
-        };
-        // param-node を子に持つペアのリストを返す
-        this.root.paramParentChild = function () {
-            return this.paramDescendants()
-                .filter(function (elm) { return elm.parents.length; })
-                .map(function (elm) {
-                    return elm.parents.map(function (prnt) {
-                        return { "x": elm.x, "y": elm.y, "parent": prnt }
-                    })
-                })
-                .reduce(function (a, b) { return a.concat(b); }, Array());
-        }
-    };
-
+    
     // create tree layout
     p.layoutTree = function () {
         var tree = d3.tree()
@@ -1121,6 +1126,10 @@ function clickParamNode(node, i, a) {
 
 // Prototype Object for Function Means Tree
 function FMTree(data) {
+    // inherit
+    FMTree.prototype = Object.create(AbsTree.prototype);
+    FMTree.prototype.constructor = FMTree;
+
     // json data
     this.data = data;
     // tree root
@@ -1141,6 +1150,13 @@ function FMTree(data) {
         .attr("width", "100%")
         .attr("height", "100%")
         .call(this.zoom);
+
+    // prototype method
+    var p = ComponentTree.prototype;
+
+    // hierararchlize data
+    p.hierarchlize = function () {
+    }
 }
 
 // perse function means tree from component tree
