@@ -248,18 +248,310 @@ function TreeModel(data) {
 }
 
 // Tree View Interface
-function ITree() { }
+var ITree = function () { };
 (function () {
     p = ITree.prototype;
     p.drawSVG = function (model, fit) { };
+    p.fit = function () { };
 }())
+
+// Prototype Object for Component Tree
+var ComponentTree = function () {
+    ITree.call(this);
+
+    // treeの拡大縮小設定
+    this.zoom = d3.zoom()
+        .scaleExtent([.2, 10])
+        // .translateExtent(
+        // [[$("#compTreeSVG").width() * -2, $("#compTreeSVG").height() * -2],
+        // [$("#compTreeSVG").width() * 2, $("#compTreeSVG").height() * 2]])
+        .on("zoom", zoomed);
+    function zoomed() {
+        d3.select("#compTreeSVG .treeContainer")
+            .attr("transform", d3.event.transform);
+    }
+    // treeを入れるコンテナを作成
+    this.svg = d3.select("#compTreeSVG")
+        .attr("width", "100%")
+        .attr("height", "100%")
+        .call(this.zoom);
+
+    // prototype method
+    var p = ComponentTree.prototype;
+
+    // geranerate SVG field
+    this.drawSVG = function (model) {
+        // svg initialize
+        d3.select("#compTreeSVG").select("svg").remove();
+        // func-nodeをSVG描画
+        // func-nodeをつなぐ線の色を設定
+        var xArray = model.root.funcDescendants()
+            .map(function (node) {
+                return node.x;
+            })
+        var xMin = Math.min.apply(null, xArray);
+        var xMax = Math.max.apply(null, xArray);
+        var getLinkColor = function (x) {
+            var h = 350 * (x - xMin) / (xMax - xMin);
+            return "hsla(" + h + ",100%,60%,1)";
+        };
+        // ノード間を線でつなぐ
+        drawLink(model.root.descendants().slice(1), "comp");
+        drawLink(model.root.funcParentChild(), "func");
+        drawLink(model.root.paramParentChild(), "param");
+        function drawLink(nodeArr, type) {
+            var className = type + "Link";
+            var strokeWidth = { "comp": 2.5, "func": 1, "param": 1 };
+            var strokeDasharray = { "comp": [2, 1], "func": undefined, "param": undefined };
+            var strokeColor = {
+                "comp": "gray",
+                "func": function (d) { return getLinkColor(d.x); },
+                "param": function (d) { return getLinkColor(d.x); }
+            };
+            var curve = { "comp": 2, "func": 1.8, "param": 1.8 }
+
+            var link = d3.select("#compTreeSVG .treeContainer .link")
+                .selectAll("." + className)
+                .data(nodeArr);
+            link.exit().remove();
+            var enteredLink = link.enter()
+                .append("path");
+            enteredLink.merge(link)
+                .attr("class", className)
+                .attr("fill", "none")
+                .attr("stroke-width", strokeWidth[type])
+                .attr("stroke-dasharray", strokeDasharray[type])
+                .attr("stroke", strokeColor[type])
+                .attr("d", function (d) {
+                    if (Math.abs(d.y - d.parent.y) < getNodeWidth()) { // 同じdepthの場合
+                        return "M" + d.y + "," + d.x
+                            + "C" + (d.y - getNodeHeight() * 2) + "," + (d.x + d.parent.x) / 2
+                            + " " + (d.y + getNodeHeight() * 2) + "," + d.parent.x
+                            + " " + d.parent.y + "," + d.parent.x;
+                    } else {
+                        return "M" + d.y + "," + d.x
+                            + "C" + (d.y + d.parent.y) / curve[type] + "," + d.x
+                            + " " + (d.y + d.parent.y) / curve[type] + "," + d.parent.x
+                            + " " + d.parent.y + "," + d.parent.x;
+                    }
+                });
+        }
+
+        // ノード作成
+        var drawNode = function (nodeArr, type, root) {
+            var className = type + "Node";
+            var circleRadius = { "comp": 4, "func": 3, "param": 3 };
+            var circleColor = { "comp": "teal", "func": "red", "param": "orange" };
+            var _clickCompNode = function (node, i, a) {
+                return clickCompNode(node, i, a, root);
+            }
+            var _clickFuncNode = function (node, i, a) {
+                return clickFuncNode(node, i, a, root);
+            }
+            var _clickParamNode = function (node, i, a) {
+                return clickParamNode(node, i, a, root);
+            }
+            var clickFunc = { "comp": _clickCompNode, "func": _clickFuncNode, "param": _clickParamNode };
+            var node = d3.select("#compTreeSVG .treeContainer .node")
+                .selectAll("." + className)
+                .data(nodeArr);
+            node.exit().remove();
+            var enteredNode = node.enter()
+                .append("g").attr("class", className);
+            enteredNode.append("circle")
+                .attr("r", circleRadius[type])
+                .attr("fill", circleColor[type]);
+            enteredNode.append("text");
+            var updatedNode = enteredNode.merge(node);
+            // ノードに円とテキストを表示
+            updatedNode
+                .attr("transform", function (d) {
+                    return "translate(" + d.y + "," + d.x + ")";
+                });
+            updatedNode.select("text").html(function (d) { return tspanStringify(d.label) });
+            updatedNode.on("click", clickFunc[type]);
+            updatedNode.call(styleNode);
+        }
+        drawNode(model.root.descendants(), "comp", model.root);
+        drawNode(model.root.funcDescendants(), "func", model.root);
+        drawNode(model.root.paramDescendants(), "param", model.root);
+
+        if (fit) {
+            this.fit();
+        }
+    };
+
+    // fit tree to SVG field by offset and scale adjustment
+    p.fit = function () {
+        var _is_block = true;
+        if ($("#comp-tree").css("display") == "none") {
+            _is_block = false;
+            $("#comp-tree").css("display", "block");
+        }
+        var bbox = $("#compTreeSVG .treeContainer")[0].getBBox();
+        var ky = $("#comp-tree").height() / bbox.height * 0.9;
+        var kx = $("#comp-tree").width() / bbox.width * 0.9;
+        var k = ky > kx ? kx : ky;
+        var ty = bbox.height / 2;
+        ty = ty < 150 ? 150 : ty;
+        var svg = d3.select("#compTreeSVG");
+        svg.call(this.zoom.transform, d3.zoomIdentity
+            .translate(10, ty + 2 * getNodeHeight())
+            .scale(k));
+        if (_is_block == false) {
+            $("#comp-tree").css("display", "none");
+        }
+    };
+}
+// inherit
+ComponentTree.prototype = Object.create(ITree.prototype);
+ComponentTree.prototype.constructor = ComponentTree;
+
+// Prototype Object for Function Means Tree
+var FMTree = function () {
+    ITree.call(this);
+
+    // treeの拡大縮小設定
+    this.zoom = d3.zoom()
+        .scaleExtent([.2, 10])
+        // .translateExtent(
+        // [[$("#compTreeSVG").width() * -2, $("#compTreeSVG").height() * -2],
+        // [$("#compTreeSVG").width() * 2, $("#compTreeSVG").height() * 2]])
+        .on("zoom", zoomed);
+    function zoomed() {
+        d3.select("#FMTreeSVG .treeContainer")
+            .attr("transform", d3.event.transform);
+    }
+    // treeを入れるコンテナを作成
+    this.svg = d3.select("#FMTreeSVG")
+        .attr("width", "100%")
+        .attr("height", "100%")
+        .call(this.zoom);
+
+    // prototype method
+    var p = FMTree.prototype;
+
+    // geranerate SVG field
+    this.drawSVG = function (model) {
+        // svg initialize
+        d3.select("#FMTreeSVG").select("svg").remove();
+
+        var zoom = d3.zoom()
+            .scaleExtent([.2, 10])
+            // .translateExtent(
+            // [[$("#FMTreeSVG").height() * -2, $("#FMTreeSVG").width() * -2],
+            // [$("#FMTreeSVG").height() * 2, $("#FMTreeSVG").width() * 2]])
+            .on("zoom", zoomed);
+        function zoomed() {
+            d3.select("#FMTreeSVG .treeContainer")
+                .attr("transform", d3.event.transform);
+        }
+        // treeを入れるコンテナを作成
+        var svg = d3.select("#FMTreeSVG")
+            .attr("width", "100%")
+            .attr("height", "100%")
+            .call(zoom);
+        svg.append("g")
+            .attr("class", "treeContainer");
+
+        // ノード間を線でつなぐ
+        var link = d3.select("#FMTreeSVG .treeContainer").selectAll(".link")
+            .data(model.fmroot.descendants().slice(1));
+        link.exit().remove();
+        var enteredLink = link.enter()
+            .append("path");
+        enteredLink.merge(link)
+            .attr("class", "link")
+            .attr("fill", "none")
+            .attr("stroke-width", 2)
+            .attr("stroke-dasharray", [2, 1])
+            .attr("stroke", "gray")
+            .attr("d", function (d) {
+                return "M" + d.y + "," + d.x
+                    + "C" + (d.y + d.parent.y) / 2 + "," + d.x
+                    + " " + (d.y + d.parent.y) / 2 + "," + d.parent.x
+                    + " " + d.parent.y + "," + d.parent.x;
+            });
+
+        // ノード作成
+        var node = d3.select("#FMTreeSVG .treeContainer")
+            .selectAll(".node")
+            .data(model.fmroot.descendants());
+        node.exit().remove();
+        var enteredNode = node.enter()
+            .append("g");
+        enteredNode.append("circle");
+        enteredNode.append("text")
+            .attr("font-size", getFMNodeHeight() + "px");
+        var updatedNode = enteredNode.merge(node);
+        updatedNode.attr("class", "node")
+            .attr("transform", function (d) {
+                return "translate(" + d.y + "," + d.x + ")";
+            });
+        updatedNode.select("circle")
+            .attr("r", 4)
+            .attr("fill", function (d) {
+                if (d.data.fmcat == "func") {
+                    return "red";
+                } else {
+                    return "teal";
+                }
+            });
+        updatedNode.select("text")
+            .html(function (d) { return tspanStringify(d.label); });
+        // draw parameter node 
+        var paramData = model.fmroot.descendants()
+            .filter(function (d) { return d.data.fmcat === "means" })
+            .reduce(function (a, b) { return a.concat(b.param); }, Array());
+        var param = d3.select("#FMTreeSVG .treeContainer")
+            .selectAll(".paramNode")
+            .data(paramData);
+        param.exit().remove();
+        var enteredParam = param.enter()
+            .append("g");
+        enteredParam.append("circle");
+        enteredParam.append("text")
+            .attr("font-size", getFMNodeHeight() * 0.8 + "px");
+        var updatedParam = enteredParam.merge(param);
+        updatedParam.attr("class", "paramNode")
+            .attr("transform", function (d) {
+                return "translate(" + d.y + "," + d.x + ")";
+            });
+        updatedParam.select("circle")
+            .attr("r", 3)
+            .attr("fill", "orange");
+        updatedParam.select("text")
+            .html(function (d) { return tspanStringify(d.label); });
+
+        // 画面サイズに合わせてツリーをオフセット&スケール
+        var _is_block = true;
+        if ($("#FM-tree").css("display") == "none") {
+            _is_block = false;
+            $("#FM-tree").css("display", "block");
+        }
+        var bbox = $("#FMTreeSVG .treeContainer")[0].getBBox();
+        var ky = $("#FM-tree").height() / bbox.height * 0.9;
+        var kx = $("#FM-tree").width() / bbox.width * 0.9;
+        var k = ky > kx ? kx : ky;
+        var ty = bbox.height / 2;
+        ty = ty < 150 ? 150 : ty;
+        svg.call(zoom.transform, d3.zoomIdentity
+            .translate(10, ty + 2 * getFMNodeHeight())
+            .scale(k));
+        if (_is_block == false) {
+            $("#FM-tree").css("display", "none");
+        }
+    }
+}
+// inherit
+FMTree.prototype = Object.create(ITree.prototype);
+FMTree.prototype.constructor = FMTree;
+
 
 // tree instances controller
 var TreeController = function (data) {
     this.model = new TreeModel(data);
 
-    this.compTree = new ComponentTree();
-    this.fmTree = new FMTree();
     this.compTree = new ComponentTree();
     this.fmTree = new FMTree();
 
@@ -431,157 +723,6 @@ function getParamLabelWidth() {
 }
 
 
-function ComponentTree() {
-    // inherit
-    ComponentTree.prototype = Object.create(ITree.prototype);
-    ComponentTree.prototype.constructor = ComponentTree;
-
-    ITree.call(this);
-
-    // treeの拡大縮小設定
-    this.zoom = d3.zoom()
-        .scaleExtent([.2, 10])
-        // .translateExtent(
-        // [[$("#compTreeSVG").width() * -2, $("#compTreeSVG").height() * -2],
-        // [$("#compTreeSVG").width() * 2, $("#compTreeSVG").height() * 2]])
-        .on("zoom", zoomed);
-    function zoomed() {
-        d3.select("#compTreeSVG .treeContainer")
-            .attr("transform", d3.event.transform);
-    }
-    // treeを入れるコンテナを作成
-    this.svg = d3.select("#compTreeSVG")
-        .attr("width", "100%")
-        .attr("height", "100%")
-        .call(this.zoom);
-
-    // prototype method
-    var p = ComponentTree.prototype;
-
-    // geranerate SVG field
-    p.drawSVG = function (model) {
-        // svg initialize
-        d3.select("#compTreeSVG").select("svg").remove();
-        // func-nodeをSVG描画
-        // func-nodeをつなぐ線の色を設定
-        var xArray = model.root.funcDescendants()
-            .map(function (node) {
-                return node.x;
-            })
-        var xMin = Math.min.apply(null, xArray);
-        var xMax = Math.max.apply(null, xArray);
-        var getLinkColor = function (x) {
-            var h = 350 * (x - xMin) / (xMax - xMin);
-            return "hsla(" + h + ",100%,60%,1)";
-        };
-        // ノード間を線でつなぐ
-        drawLink(model.root.descendants().slice(1), "comp");
-        drawLink(model.root.funcParentChild(), "func");
-        drawLink(model.root.paramParentChild(), "param");
-        function drawLink(nodeArr, type) {
-            var className = type + "Link";
-            var strokeWidth = { "comp": 2.5, "func": 1, "param": 1 };
-            var strokeDasharray = { "comp": [2, 1], "func": undefined, "param": undefined };
-            var strokeColor = {
-                "comp": "gray",
-                "func": function (d) { return getLinkColor(d.x); },
-                "param": function (d) { return getLinkColor(d.x); }
-            };
-            var curve = { "comp": 2, "func": 1.8, "param": 1.8 }
-
-            var link = d3.select("#compTreeSVG .treeContainer .link")
-                .selectAll("." + className)
-                .data(nodeArr);
-            link.exit().remove();
-            var enteredLink = link.enter()
-                .append("path");
-            enteredLink.merge(link)
-                .attr("class", className)
-                .attr("fill", "none")
-                .attr("stroke-width", strokeWidth[type])
-                .attr("stroke-dasharray", strokeDasharray[type])
-                .attr("stroke", strokeColor[type])
-                .attr("d", function (d) {
-                    if (Math.abs(d.y - d.parent.y) < getNodeWidth()) { // 同じdepthの場合
-                        return "M" + d.y + "," + d.x
-                            + "C" + (d.y - getNodeHeight() * 2) + "," + (d.x + d.parent.x) / 2
-                            + " " + (d.y + getNodeHeight() * 2) + "," + d.parent.x
-                            + " " + d.parent.y + "," + d.parent.x;
-                    } else {
-                        return "M" + d.y + "," + d.x
-                            + "C" + (d.y + d.parent.y) / curve[type] + "," + d.x
-                            + " " + (d.y + d.parent.y) / curve[type] + "," + d.parent.x
-                            + " " + d.parent.y + "," + d.parent.x;
-                    }
-                });
-        }
-
-        // ノード作成
-        var drawNode = function (nodeArr, type, root) {
-            var className = type + "Node";
-            var circleRadius = { "comp": 4, "func": 3, "param": 3 };
-            var circleColor = { "comp": "teal", "func": "red", "param": "orange" };
-            var _clickCompNode = function (node, i, a) {
-                return clickCompNode(node, i, a, root);
-            }
-            var _clickFuncNode = function (node, i, a) {
-                return clickFuncNode(node, i, a, root);
-            }
-            var _clickParamNode = function (node, i, a) {
-                return clickParamNode(node, i, a, root);
-            }
-            var clickFunc = { "comp": _clickCompNode, "func": _clickFuncNode, "param": _clickParamNode };
-            var node = d3.select("#compTreeSVG .treeContainer .node")
-                .selectAll("." + className)
-                .data(nodeArr);
-            node.exit().remove();
-            var enteredNode = node.enter()
-                .append("g").attr("class", className);
-            enteredNode.append("circle")
-                .attr("r", circleRadius[type])
-                .attr("fill", circleColor[type]);
-            enteredNode.append("text");
-            var updatedNode = enteredNode.merge(node);
-            // ノードに円とテキストを表示
-            updatedNode
-                .attr("transform", function (d) {
-                    return "translate(" + d.y + "," + d.x + ")";
-                });
-            updatedNode.select("text").html(function (d) { return tspanStringify(d.label) });
-            updatedNode.on("click", clickFunc[type]);
-            updatedNode.call(styleNode);
-        }
-        drawNode(model.root.descendants(), "comp", model.root);
-        drawNode(model.root.funcDescendants(), "func", model.root);
-        drawNode(model.root.paramDescendants(), "param", model.root);
-
-        if (fit) {
-            this.fit();
-        }
-    };
-
-    // fit tree to SVG field by offset and scale adjustment
-    p.fit = function () {
-        var _is_block = true;
-        if ($("#comp-tree").css("display") == "none") {
-            _is_block = false;
-            $("#comp-tree").css("display", "block");
-        }
-        var bbox = $("#compTreeSVG .treeContainer")[0].getBBox();
-        var ky = $("#comp-tree").height() / bbox.height * 0.9;
-        var kx = $("#comp-tree").width() / bbox.width * 0.9;
-        var k = ky > kx ? kx : ky;
-        var ty = bbox.height / 2;
-        ty = ty < 150 ? 150 : ty;
-        var svg = d3.select("#compTreeSVG");
-        svg.call(this.zoom.transform, d3.zoomIdentity
-            .translate(10, ty + 2 * getNodeHeight())
-            .scale(k));
-        if (_is_block == false) {
-            $("#comp-tree").css("display", "none");
-        }
-    };
-}
 
 function tspanStringify(strArr) {
     var _html = "";
@@ -1225,147 +1366,6 @@ function clickParamNode(node, i, a) {
     // bind note
     d3.select("#param-edit").select(".note textarea")
         .call(bindNote, node, a[i]);
-}
-
-
-// Prototype Object for Function Means Tree
-function FMTree() {
-    ITree.call(this);
-    // inherit
-    FMTree.prototype = Object.create(ITree.prototype);
-    FMTree.prototype.constructor = FMTree;
-
-    // treeの拡大縮小設定
-    this.zoom = d3.zoom()
-        .scaleExtent([.2, 10])
-        // .translateExtent(
-        // [[$("#compTreeSVG").width() * -2, $("#compTreeSVG").height() * -2],
-        // [$("#compTreeSVG").width() * 2, $("#compTreeSVG").height() * 2]])
-        .on("zoom", zoomed);
-    function zoomed() {
-        d3.select("#FMTreeSVG .treeContainer")
-            .attr("transform", d3.event.transform);
-    }
-    // treeを入れるコンテナを作成
-    this.svg = d3.select("#FMTreeSVG")
-        .attr("width", "100%")
-        .attr("height", "100%")
-        .call(this.zoom);
-
-    // prototype method
-    var p = FMTree.prototype;
-
-    // geranerate SVG field
-    p.drawSVG = function (model) {
-        // svg initialize
-        d3.select("#FMTreeSVG").select("svg").remove();
-
-        var zoom = d3.zoom()
-            .scaleExtent([.2, 10])
-            // .translateExtent(
-            // [[$("#FMTreeSVG").height() * -2, $("#FMTreeSVG").width() * -2],
-            // [$("#FMTreeSVG").height() * 2, $("#FMTreeSVG").width() * 2]])
-            .on("zoom", zoomed);
-        function zoomed() {
-            d3.select("#FMTreeSVG .treeContainer")
-                .attr("transform", d3.event.transform);
-        }
-        // treeを入れるコンテナを作成
-        var svg = d3.select("#FMTreeSVG")
-            .attr("width", "100%")
-            .attr("height", "100%")
-            .call(zoom);
-        svg.append("g")
-            .attr("class", "treeContainer");
-
-        // ノード間を線でつなぐ
-        var link = d3.select("#FMTreeSVG .treeContainer").selectAll(".link")
-            .data(model.fmroot.descendants().slice(1));
-        link.exit().remove();
-        var enteredLink = link.enter()
-            .append("path");
-        enteredLink.merge(link)
-            .attr("class", "link")
-            .attr("fill", "none")
-            .attr("stroke-width", 2)
-            .attr("stroke-dasharray", [2, 1])
-            .attr("stroke", "gray")
-            .attr("d", function (d) {
-                return "M" + d.y + "," + d.x
-                    + "C" + (d.y + d.parent.y) / 2 + "," + d.x
-                    + " " + (d.y + d.parent.y) / 2 + "," + d.parent.x
-                    + " " + d.parent.y + "," + d.parent.x;
-            });
-
-        // ノード作成
-        var node = d3.select("#FMTreeSVG .treeContainer")
-            .selectAll(".node")
-            .data(model.fmroot.descendants());
-        node.exit().remove();
-        var enteredNode = node.enter()
-            .append("g");
-        enteredNode.append("circle");
-        enteredNode.append("text")
-            .attr("font-size", getFMNodeHeight() + "px");
-        var updatedNode = enteredNode.merge(node);
-        updatedNode.attr("class", "node")
-            .attr("transform", function (d) {
-                return "translate(" + d.y + "," + d.x + ")";
-            });
-        updatedNode.select("circle")
-            .attr("r", 4)
-            .attr("fill", function (d) {
-                if (d.data.fmcat == "func") {
-                    return "red";
-                } else {
-                    return "teal";
-                }
-            });
-        updatedNode.select("text")
-            .html(function (d) { return tspanStringify(d.label); });
-        // draw parameter node 
-        var paramData = model.fmroot.descendants()
-            .filter(function (d) { return d.data.fmcat === "means" })
-            .reduce(function (a, b) { return a.concat(b.param); }, Array());
-        var param = d3.select("#FMTreeSVG .treeContainer")
-            .selectAll(".paramNode")
-            .data(paramData);
-        param.exit().remove();
-        var enteredParam = param.enter()
-            .append("g");
-        enteredParam.append("circle");
-        enteredParam.append("text")
-            .attr("font-size", getFMNodeHeight() * 0.8 + "px");
-        var updatedParam = enteredParam.merge(param);
-        updatedParam.attr("class", "paramNode")
-            .attr("transform", function (d) {
-                return "translate(" + d.y + "," + d.x + ")";
-            });
-        updatedParam.select("circle")
-            .attr("r", 3)
-            .attr("fill", "orange");
-        updatedParam.select("text")
-            .html(function (d) { return tspanStringify(d.label); });
-
-        // 画面サイズに合わせてツリーをオフセット&スケール
-        var _is_block = true;
-        if ($("#FM-tree").css("display") == "none") {
-            _is_block = false;
-            $("#FM-tree").css("display", "block");
-        }
-        var bbox = $("#FMTreeSVG .treeContainer")[0].getBBox();
-        var ky = $("#FM-tree").height() / bbox.height * 0.9;
-        var kx = $("#FM-tree").width() / bbox.width * 0.9;
-        var k = ky > kx ? kx : ky;
-        var ty = bbox.height / 2;
-        ty = ty < 150 ? 150 : ty;
-        svg.call(zoom.transform, d3.zoomIdentity
-            .translate(10, ty + 2 * getFMNodeHeight())
-            .scale(k));
-        if (_is_block == false) {
-            $("#FM-tree").css("display", "none");
-        }
-    }
 }
 
 function getFMNodeHeight() {
