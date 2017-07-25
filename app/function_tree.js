@@ -251,6 +251,7 @@ function TreeModel(data) {
 var ITree = function () { };
 (function () {
     p = ITree.prototype;
+    p.isActiveSVG = function () { return true; };
     p.drawSVG = function (model, fit) { };
     p.fit = function () { };
 }())
@@ -276,8 +277,12 @@ var ComponentTree = function () {
         .attr("height", "100%")
         .call(this.zoom);
 
-    // prototype method
-    var p = ComponentTree.prototype;
+    this.isActiveSVG = function () {
+        if ($("#comp-tree").css("display") == "none") {
+            return false;
+        }
+        return true;
+    }
 
     // geranerate SVG field
     this.drawSVG = function (model) {
@@ -382,7 +387,7 @@ var ComponentTree = function () {
     };
 
     // fit tree to SVG field by offset and scale adjustment
-    p.fit = function () {
+    this.fit = function () {
         var _is_block = true;
         if ($("#comp-tree").css("display") == "none") {
             _is_block = false;
@@ -428,8 +433,12 @@ var FMTree = function () {
         .attr("height", "100%")
         .call(this.zoom);
 
-    // prototype method
-    var p = FMTree.prototype;
+    this.isActiveSVG = function () {
+        if ($("#FM-tree").css("display") == "none") {
+            return false;
+        }
+        return true;
+    }
 
     // geranerate SVG field
     this.drawSVG = function (model) {
@@ -552,8 +561,9 @@ FMTree.prototype.constructor = FMTree;
 var TreeController = function (data) {
     this.model = new TreeModel(data);
 
-    this.compTree = new ComponentTree();
-    this.fmTree = new FMTree();
+    this.trees = Array();
+    this.trees.push(new ComponentTree());
+    this.trees.push(new FMTree());
 
     // prototype
     p = TreeController.prototype;
@@ -561,29 +571,28 @@ var TreeController = function (data) {
     p.setData = function (data) {
         this.model.data = data;
     }
-    // アクティブなツリーのinstanceを返す
-    p.getActiveTree = function () {
-        if ($("#comp-tree").css("display") == "block") {
-            return this.compTree;
-        }
-        if ($("#FM-tree").css("display") == "block") {
-            return this.fmTree;
-        }
-        return new ITree();
-    };
     // モデル再計算
     p.computeModel = function () {
         this.model.makeCompTreeModel();
         this.model.makeFMTreeModel();
     }
+    // Tree viewの再描画
+    p.drawSVG = function (fit) {
+        this.trees
+            .filter(function (tree) {
+                return tree.isActiveSVG();
+            })
+            .forEach(function (tree) {
+                tree.drawSVG(this.model, fit = fit);
+            }, this)
+    }
     // headerのreloadがclickされたときの挙動
     p.reload = function () {
         this.computeModel();
-        this.getActiveTree().drawSVG(this.model, fit = true);
+        this.drawSVG(true);
     };
     // 画面遷移したことをtreeのインスタンスに通知
     p.notice = function () {
-        // this.getActiveTree().activate();
     };
 };
 var trees = new TreeController(dataset);
