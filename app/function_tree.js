@@ -16,20 +16,16 @@ function writeData() {
 }
 readData();
 
-// Abstract Tree object
-function AbsTree(data = undefined) {
-    if (data) {
-        this.data = data;
-    }
-}
-(function () {
-    p = AbsTree.prototype;
-    p.root = Object();
-    p.data = Object();
-    p.reload = function () { };
-    p.activate = function () { };
-    // hierararchlize data
-    p.hierarchlize = function () {
+// Tree Model Object
+function TreeModel(data) {
+    this.data = data;
+    this.root = Object();
+    this.fmroot = Object();
+
+    p = TreeModel.prototype;
+
+    // hierararchlize Component Tree Model and set layout
+    p.makeCompTreeModel = function () {
         this.root = d3.hierarchy(this.data, function (d) {
             return d["children"];
         });
@@ -80,7 +76,7 @@ function AbsTree(data = undefined) {
         this.root.paramDescendants = function () {
             return this.descendants()
                 .reduce(function (a, b) { return a.concat(b.param); }, Array());
-        };
+        }
         // param-node を子に持つペアのリストを返す
         this.root.paramParentChild = function () {
             return this.paramDescendants()
@@ -92,10 +88,8 @@ function AbsTree(data = undefined) {
                 })
                 .reduce(function (a, b) { return a.concat(b); }, Array());
         }
-    };
 
-    // create tree layout
-    p.layoutTree = function () {
+        // create tree layout
         var tree = d3.tree()
             // .size([$(window).height() - $("#top-nav").height(), $("#compTreeSVG").width() * 0.9])
             .nodeSize([getNodeHeight(), getNodeWidth()])
@@ -156,19 +150,124 @@ function AbsTree(data = undefined) {
                 // (prameter doesn't have parameter)
             });
         });
-    };
+    }
+
+    // hierarchlize Function-Means Tree Model and set layout
+    p.makeFMTreeModel = function () {
+        // make object based by function means model hierarchy
+        var fmData = {
+            "fmcat": "root",
+            "children": [],
+            "node": { "data": { "name": "Customer" } }
+        };
+        var setFMchild = function (node) {
+            if (node.children === undefined) {
+                return Array();
+            } else {
+                return node.children
+                    .filter(function (child) {
+                        return child.isb !== undefined;
+                    })
+                    .map(function (childfunc) {
+                        return {
+                            "fmcat": "func",
+                            "node": childfunc,
+                            "children": [{
+                                "fmcat": "means",
+                                "node": childfunc.isb,
+                                "children": setFMchild(childfunc),
+                                "param": childfunc.children == undefined ? [] :
+                                    childfunc.children.filter(function (e) {
+                                        return e.isb === undefined;
+                                    })
+                            }]
+                        }
+                    })
+            }
+        }
+        this.root.func.forEach(function (fnode) {
+            fmData.children.push({
+                "fmcat": "func",
+                "node": fnode,
+                "children": [{
+                    "fmcat": "means",
+                    "node": this.root,
+                    "children": setFMchild(fnode),
+                    "param": fnode.children == undefined ? [] :
+                        fnode.children.filter(function (e) {
+                            return e.isb === undefined;
+                        })
+                }]
+            })
+        }, this);
+
+        // compute hierarchy for function means tree
+        this.fmroot = d3.hierarchy(fmData, function (d) {
+            return d["children"];
+        })
+
+        // set label, node, and data
+        this.fmroot.eachBefore(function (fmnode) {
+            fmnode.cnode = fmnode.data.node;
+            fmnode.cdata = fmnode.data.node.data;
+            fmnode.label = splitStrByWidth(
+                fmnode.cdata.name, getFMLabelWidth());
+            // set parameter node
+            if (fmnode.data.fmcat == "means") {
+                fmnode.param = fmnode.data.param
+                    .map(function (d) {
+                        return {
+                            "cnode": d,
+                            "cdata": d.data,
+                            "label": splitStrByWidth(d.data.name, getFMLabelWidth())
+                        };
+                    });
+            }
+        })
+
+        //tree setting
+        var tree = d3.tree()
+            .nodeSize([getFMNodeHeight(), getFMNodeWidth()])
+            .separation(separate(function (node) {
+                return node.param === undefined ? [] : node.param;
+            }));
+        // create tree layout
+        tree(this.fmroot);
+        // set coordinate of param node
+        var kx = getNodeHeight(); // labelの並列方向単位長
+        this.fmroot.each(function (node) {
+            if (node.data.fmcat != "means") return;
+            var lineOffset = node.label.length;
+            node.param.forEach(function (p, i, arr) {
+                arr[i].x = node.x + kx * lineOffset;
+                arr[i].y = node.y - getFMNodeWidth() / 4;
+                lineOffset += p.label.length;
+            })
+        });
+    }
+}
+
+// Tree View Interface
+function ITree() { }
+(function () {
+    p = ITree.prototype;
+    p.drawSVG = function (model, fit) { };
 }())
 
 // tree instances controller
-var Trees = function (data) {
-    this.compTree = new ComponentTree(data);
-    this.fmTree = new FMTree(data);
+var TreeController = function (data) {
+    this.model = new TreeModel(data);
+
+    this.compTree = new ComponentTree();
+    this.fmTree = new FMTree();
+    this.compTree = new ComponentTree();
+    this.fmTree = new FMTree();
+
     // prototype
-    p = Trees.prototype;
+    p = TreeController.prototype;
     // set data
     p.setData = function (data) {
-        this.compTree = new ComponentTree(data);
-        this.fmTree = new FMTree(data);
+        this.model.data = data;
     }
     // アクティブなツリーのinstanceを返す
     p.getActiveTree = function () {
@@ -176,21 +275,27 @@ var Trees = function (data) {
             return this.compTree;
         }
         if ($("#FM-tree").css("display") == "block") {
-            console.log(this.fmTree);
             return this.fmTree;
         }
-        return new AbsTree();
+        return new ITree();
     };
+    // モデル再計算
+    p.computeModel = function () {
+        this.model.makeCompTreeModel();
+        this.model.makeFMTreeModel();
+    }
     // headerのreloadがclickされたときの挙動
-    p.reload = function (fit = undefined) {
-        this.getActiveTree().reload(fit);
+    p.reload = function () {
+        this.computeModel();
+        this.getActiveTree().drawSVG(this.model, fit = true);
     };
     // 画面遷移したことをtreeのインスタンスに通知
     p.notice = function () {
-        this.getActiveTree().activate();
+        // this.getActiveTree().activate();
     };
 };
-var trees = new Trees(dataset);
+var trees = new TreeController(dataset);
+
 
 // get URL parameter and read initial data
 if (1 < document.location.search.length) {
@@ -326,12 +431,12 @@ function getParamLabelWidth() {
 }
 
 
-function ComponentTree(data) {
+function ComponentTree() {
     // inherit
-    ComponentTree.prototype = Object.create(AbsTree.prototype);
+    ComponentTree.prototype = Object.create(ITree.prototype);
     ComponentTree.prototype.constructor = ComponentTree;
 
-    AbsTree.call(this, data);
+    ITree.call(this);
 
     // treeの拡大縮小設定
     this.zoom = d3.zoom()
@@ -354,12 +459,12 @@ function ComponentTree(data) {
     var p = ComponentTree.prototype;
 
     // geranerate SVG field
-    p.makeSVG = function () {
+    p.drawSVG = function (model) {
         // svg initialize
         d3.select("#compTreeSVG").select("svg").remove();
         // func-nodeをSVG描画
         // func-nodeをつなぐ線の色を設定
-        var xArray = this.root.funcDescendants()
+        var xArray = model.root.funcDescendants()
             .map(function (node) {
                 return node.x;
             })
@@ -370,9 +475,9 @@ function ComponentTree(data) {
             return "hsla(" + h + ",100%,60%,1)";
         };
         // ノード間を線でつなぐ
-        drawLink(this.root.descendants().slice(1), "comp");
-        drawLink(this.root.funcParentChild(), "func");
-        drawLink(this.root.paramParentChild(), "param");
+        drawLink(model.root.descendants().slice(1), "comp");
+        drawLink(model.root.funcParentChild(), "func");
+        drawLink(model.root.paramParentChild(), "param");
         function drawLink(nodeArr, type) {
             var className = type + "Link";
             var strokeWidth = { "comp": 2.5, "func": 1, "param": 1 };
@@ -446,9 +551,13 @@ function ComponentTree(data) {
             updatedNode.on("click", clickFunc[type]);
             updatedNode.call(styleNode);
         }
-        drawNode(this.root.descendants(), "comp", this.root);
-        drawNode(this.root.funcDescendants(), "func", this.root);
-        drawNode(this.root.paramDescendants(), "param", this.root);
+        drawNode(model.root.descendants(), "comp", model.root);
+        drawNode(model.root.funcDescendants(), "func", model.root);
+        drawNode(model.root.paramDescendants(), "param", model.root);
+
+        if (fit) {
+            this.fit();
+        }
     };
 
     // fit tree to SVG field by offset and scale adjustment
@@ -472,16 +581,6 @@ function ComponentTree(data) {
             $("#comp-tree").css("display", "none");
         }
     };
-
-    // reload tree
-    p.reload = function (fit = undefined) {
-        this.hierarchlize();
-        this.layoutTree();
-        this.makeSVG();
-        if (fit) {
-            this.fit();
-        }
-    }
 }
 
 function tspanStringify(strArr) {
@@ -1130,14 +1229,11 @@ function clickParamNode(node, i, a) {
 
 
 // Prototype Object for Function Means Tree
-function FMTree(data) {
-    AbsTree.call(this, data);
+function FMTree() {
+    ITree.call(this);
     // inherit
-    FMTree.prototype = Object.create(AbsTree.prototype);
+    FMTree.prototype = Object.create(ITree.prototype);
     FMTree.prototype.constructor = FMTree;
-
-    // root of function means tree
-    this.fmroot = Object();
 
     // treeの拡大縮小設定
     this.zoom = d3.zoom()
@@ -1159,110 +1255,8 @@ function FMTree(data) {
     // prototype method
     var p = FMTree.prototype;
 
-    // hierararchlize data
-    p.hierarchlize = function () {
-        AbsTree.prototype.hierarchlize.call(this);
-        AbsTree.prototype.layoutTree.call(this);
-
-        var fmData = {
-            "fmcat": "root",
-            "children": [],
-            "node": { "data": { "name": "Customer" } }
-        };
-        var setFMchild = function (node) {
-            console.log("node", node);
-            if (node.children === undefined) {
-                return Array();
-            } else {
-                return node.children
-                    .filter(function (child) {
-                        return child.isb !== undefined;
-                    })
-                    .map(function (childfunc) {
-                        return {
-                            "fmcat": "func",
-                            "node": childfunc,
-                            "children": [{
-                                "fmcat": "means",
-                                "node": childfunc.isb,
-                                "children": setFMchild(childfunc),
-                                "param": childfunc.children == undefined ? [] :
-                                    childfunc.children.filter(function (e) {
-                                        return e.isb === undefined;
-                                    })
-                            }]
-                        }
-                    })
-            }
-        }
-        console.log("this.root", this.root);
-        this.root.func.forEach(function (fnode) {
-            console.log("fnode", fnode);
-            fmData.children.push({
-                "fmcat": "func",
-                "node": fnode,
-                "children": [{
-                    "fmcat": "means",
-                    "node": this.root,
-                    "children": setFMchild(fnode),
-                    "param": fnode.children == undefined ? [] :
-                        fnode.children.filter(function (e) {
-                            return e.isb === undefined;
-                        })
-                }]
-            })
-        }, this);
-
-        // compute hierarchy for function means tree
-        this.fmroot = d3.hierarchy(fmData, function (d) {
-            return d["children"];
-        })
-
-        // set label, node, and data
-        this.fmroot.eachBefore(function (fmnode) {
-            fmnode.cnode = fmnode.data.node;
-            fmnode.cdata = fmnode.data.node.data;
-            fmnode.label = splitStrByWidth(
-                fmnode.cdata.name, getFMLabelWidth());
-            // set parameter node
-            if (fmnode.data.fmcat == "means") {
-                fmnode.param = fmnode.data.param
-                    .map(function (d) {
-                        return {
-                            "cnode": d,
-                            "cdata": d.data,
-                            "label": splitStrByWidth(d.data.name, getFMLabelWidth())
-                        };
-                    });
-            }
-        })
-    }
-
-    // create tree layout
-    p.layoutTree = function () {
-        //tree setting
-        var tree = d3.tree()
-            .nodeSize([getFMNodeHeight(), getFMNodeWidth()])
-            .separation(separate(function (node) {
-                return node.param === undefined ? [] : node.param;
-            }));
-        // create tree layout
-        tree(this.fmroot);
-        // set coordinate of param node
-        var kx = getNodeHeight(); // labelの並列方向単位長
-        this.fmroot.each(function (node) {
-            if (node.data.fmcat != "means") return;
-            var lineOffset = node.label.length;
-            node.param.forEach(function (p, i, arr) {
-                arr[i].x = node.x + kx * lineOffset;
-                arr[i].y = node.y - getFMNodeWidth() / 4;
-                lineOffset += p.label.length;
-            })
-        });
-    }
-
     // geranerate SVG field
-    p.makeSVG = function () {
+    p.drawSVG = function (model) {
         // svg initialize
         d3.select("#FMTreeSVG").select("svg").remove();
 
@@ -1286,7 +1280,7 @@ function FMTree(data) {
 
         // ノード間を線でつなぐ
         var link = d3.select("#FMTreeSVG .treeContainer").selectAll(".link")
-            .data(this.fmroot.descendants().slice(1));
+            .data(model.fmroot.descendants().slice(1));
         link.exit().remove();
         var enteredLink = link.enter()
             .append("path");
@@ -1306,7 +1300,7 @@ function FMTree(data) {
         // ノード作成
         var node = d3.select("#FMTreeSVG .treeContainer")
             .selectAll(".node")
-            .data(this.fmroot.descendants());
+            .data(model.fmroot.descendants());
         node.exit().remove();
         var enteredNode = node.enter()
             .append("g");
@@ -1330,7 +1324,7 @@ function FMTree(data) {
         updatedNode.select("text")
             .html(function (d) { return tspanStringify(d.label); });
         // draw parameter node 
-        var paramData = this.fmroot.descendants()
+        var paramData = model.fmroot.descendants()
             .filter(function (d) { return d.data.fmcat === "means" })
             .reduce(function (a, b) { return a.concat(b.param); }, Array());
         var param = d3.select("#FMTreeSVG .treeContainer")
@@ -1353,8 +1347,6 @@ function FMTree(data) {
         updatedParam.select("text")
             .html(function (d) { return tspanStringify(d.label); });
 
-        console.log(this.fmroot);
-
         // 画面サイズに合わせてツリーをオフセット&スケール
         var _is_block = true;
         if ($("#FM-tree").css("display") == "none") {
@@ -1373,16 +1365,6 @@ function FMTree(data) {
         if (_is_block == false) {
             $("#FM-tree").css("display", "none");
         }
-    }
-
-    // reload tree
-    p.reload = function (fit = undefined) {
-        this.hierarchlize();
-        this.layoutTree();
-        this.makeSVG();
-        // if (fit) {
-        //     this.fit();
-        // }
     }
 }
 
