@@ -709,11 +709,21 @@ $("#show-svg").click(function () {
     window.open("data:image/svg+xml;charset=utf-8,"
         + encodeURIComponent($("<div>").append(showsvg).html()));
 });
-// reload tree view
+// reload action when reload button is clicked
 $("#reload").click(function () {
     trees.reload(fit = true);
     setEditPane();
+});
+// reload action when tab transition
+var tabObserver = new MutationObserver(function (rec, obs) {
+    trees.reload(fit = true);
+    setEditPane();
+});
+tabObserver.observe($("main div.container").get(0), {
+    attributes: true
 })
+
+
 
 function getNodeHeight() {
     return 15;
