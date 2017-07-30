@@ -309,7 +309,7 @@ var ITree = function (selector) {
         return zoomer;
     }
     // fit drawing to the SVG field by offset and scale adjustment
-    p.fit = function () {
+    p.fit = function (xOffset = undefined) {
         var _is_block = true;
         if (this.svg.style("display") == "none") {
             _is_block = false;
@@ -321,8 +321,12 @@ var ITree = function (selector) {
         var kx = parseInt(this.svg.style("width")) / bbox.width * 0.9;
         var k = ky > kx ? kx : ky;
         var ty = bbox.height / 2 * k;
+        var tx = 10;
+        if (xOffset) {
+            tx += bbox.width / 2 * k;
+        }
         this.svg.call(this.zoomer.transform, d3.zoomIdentity
-            .translate(10, ty + 2 * getNodeHeight())
+            .translate(tx, ty + 2 * getNodeHeight())
             .scale(k));
         if (_is_block == false) {
             this.svg.style("display", "none");
@@ -545,13 +549,7 @@ var Funcburst = function () {
                 return y(d.y1 - 0.01);
             });
 
-        var svg = d3.select("#funcburstSVG")
-            .attr("width", "100%")
-            .attr("height", "100%")
-            .select(".treeContainer")
-            .attr("transform", "translate(" + 400 + "," + 300 + ")");
-
-        var cell = svg.select(".cell").selectAll(".node")
+        var cell = this.svg.select(".cell").selectAll(".node")
             .data(model.root.descendants());
         cell.exit().remove();
         var enteredCell = cell.enter()
@@ -560,7 +558,9 @@ var Funcburst = function () {
             .attr("class", "node")
             .attr("d", arc)
             .style("fill", function (d) { return color(d.data.name); });
-
+    }
+    this.fit = function () {
+        ITree.prototype.fit.call(this, xOffset = true);
     }
 }
 // inherit
