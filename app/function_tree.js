@@ -275,41 +275,64 @@ function TreeModel(data) {
 }
 
 // Tree View Interface
-var ITree = function () { };
+var ITree = function (selector) {
+    this.svg = d3.select(selector);
+    this.zoomer = this.setZoom();
+};
 (function () {
     p = ITree.prototype;
-    p.isActiveSVG = function () { return true; };
+    p.isActiveSVG = function () {
+        if (this.svg.style("display") == "none") {
+            return false;
+        }
+        return true;
+    };
     p.drawSVG = function (model, fit) { };
-    p.fit = function () { };
+    p.setZoom = function () {
+        var zoomed = function (svg) {
+            return function () {
+                svg.select(".treeContainer")
+                    .attr("transform", d3.event.transform);
+            }
+        }
+        var zoomer = d3.zoom()
+            .scaleExtent([.2, 10])
+            // .translateExtent(
+            // [[$("#compTreeSVG").width() * -2, $("#compTreeSVG").height() * -2],
+            // [$("#compTreeSVG").width() * 2, $("#compTreeSVG").height() * 2]])
+            .on("zoom", zoomed(this.svg));
+        this.svg
+            .attr("width", "100%")
+            .attr("height", "100%")
+            .call(zoomer);
+
+        return zoomer;
+    }
+    // fit drawing to the SVG field by offset and scale adjustment
+    p.fit = function () {
+        var _is_block = true;
+        if (this.svg.style("display") == "none") {
+            _is_block = false;
+            this.svg.style("display", "block");
+        }
+        // var bbox = $("#compTreeSVG .treeContainer")[0].getBBox();
+        var bbox = this.svg.select(".treeContainer").node().getBBox();
+        var ky = parseInt(this.svg.style("height")) / bbox.height * 0.9;
+        var kx = parseInt(this.svg.style("width")) / bbox.width * 0.9;
+        var k = ky > kx ? kx : ky;
+        var ty = bbox.height / 2 * k;
+        this.svg.call(this.zoomer.transform, d3.zoomIdentity
+            .translate(10, ty + 2 * getNodeHeight())
+            .scale(k));
+        if (_is_block == false) {
+            this.svg.style("display", "none");
+        }
+    };
 }())
 
 // View Object for Component Tree
 var ComponentTree = function () {
-    ITree.call(this);
-
-    // treeの拡大縮小設定
-    this.zoom = d3.zoom()
-        .scaleExtent([.2, 10])
-        // .translateExtent(
-        // [[$("#compTreeSVG").width() * -2, $("#compTreeSVG").height() * -2],
-        // [$("#compTreeSVG").width() * 2, $("#compTreeSVG").height() * 2]])
-        .on("zoom", zoomed);
-    function zoomed() {
-        d3.select("#compTreeSVG .treeContainer")
-            .attr("transform", d3.event.transform);
-    }
-    // treeを入れるコンテナを作成
-    this.svg = d3.select("#compTreeSVG")
-        .attr("width", "100%")
-        .attr("height", "100%")
-        .call(this.zoom);
-
-    this.isActiveSVG = function () {
-        if ($("#comp-tree").css("display") == "none") {
-            return false;
-        }
-        return true;
-    }
+    ITree.call(this, "#comp-tree");
 
     // geranerate SVG field
     this.drawSVG = function (model) {
@@ -405,32 +428,6 @@ var ComponentTree = function () {
         drawNode(model.root.descendants(), "comp", model.root);
         drawNode(model.root.funcDescendants(), "func", model.root);
         drawNode(model.root.paramDescendants(), "param", model.root);
-
-        if (fit) {
-            this.fit();
-        }
-    };
-
-    // fit tree to SVG field by offset and scale adjustment
-    this.fit = function () {
-        var _is_block = true;
-        if ($("#comp-tree").css("display") == "none") {
-            _is_block = false;
-            $("#comp-tree").css("display", "block");
-        }
-        var bbox = $("#compTreeSVG .treeContainer")[0].getBBox();
-        var ky = $("#comp-tree").height() / bbox.height * 0.9;
-        var kx = $("#comp-tree").width() / bbox.width * 0.9;
-        var k = ky > kx ? kx : ky;
-        var ty = bbox.height / 2;
-        ty = ty < 150 ? 150 : ty;
-        var svg = d3.select("#compTreeSVG");
-        svg.call(this.zoom.transform, d3.zoomIdentity
-            .translate(10, ty + 2 * getNodeHeight())
-            .scale(k));
-        if (_is_block == false) {
-            $("#comp-tree").css("display", "none");
-        }
     };
 }
 // inherit
@@ -439,54 +436,12 @@ ComponentTree.prototype.constructor = ComponentTree;
 
 // View Object for Function Means Tree
 var FMTree = function () {
-    ITree.call(this);
-
-    // treeの拡大縮小設定
-    this.zoom = d3.zoom()
-        .scaleExtent([.2, 10])
-        // .translateExtent(
-        // [[$("#compTreeSVG").width() * -2, $("#compTreeSVG").height() * -2],
-        // [$("#compTreeSVG").width() * 2, $("#compTreeSVG").height() * 2]])
-        .on("zoom", zoomed);
-    function zoomed() {
-        d3.select("#FMTreeSVG .treeContainer")
-            .attr("transform", d3.event.transform);
-    }
-    // treeを入れるコンテナを作成
-    this.svg = d3.select("#FMTreeSVG")
-        .attr("width", "100%")
-        .attr("height", "100%")
-        .call(this.zoom);
-
-    this.isActiveSVG = function () {
-        if ($("#FM-tree").css("display") == "none") {
-            return false;
-        }
-        return true;
-    }
+    ITree.call(this, "#FM-tree");
 
     // geranerate SVG field
     this.drawSVG = function (model) {
         // svg initialize
         d3.select("#FMTreeSVG").select("svg").remove();
-
-        var zoom = d3.zoom()
-            .scaleExtent([.2, 10])
-            // .translateExtent(
-            // [[$("#FMTreeSVG").height() * -2, $("#FMTreeSVG").width() * -2],
-            // [$("#FMTreeSVG").height() * 2, $("#FMTreeSVG").width() * 2]])
-            .on("zoom", zoomed);
-        function zoomed() {
-            d3.select("#FMTreeSVG .treeContainer")
-                .attr("transform", d3.event.transform);
-        }
-        // treeを入れるコンテナを作成
-        var svg = d3.select("#FMTreeSVG")
-            .attr("width", "100%")
-            .attr("height", "100%")
-            .call(zoom);
-        svg.append("g")
-            .attr("class", "treeContainer");
 
         // ノード間を線でつなぐ
         var link = d3.select("#FMTreeSVG .treeContainer").selectAll(".link")
@@ -556,25 +511,6 @@ var FMTree = function () {
             .attr("fill", "orange");
         updatedParam.select("text")
             .html(function (d) { return tspanStringify(d.label); });
-
-        // 画面サイズに合わせてツリーをオフセット&スケール
-        var _is_block = true;
-        if ($("#FM-tree").css("display") == "none") {
-            _is_block = false;
-            $("#FM-tree").css("display", "block");
-        }
-        var bbox = $("#FMTreeSVG .treeContainer")[0].getBBox();
-        var ky = $("#FM-tree").height() / bbox.height * 0.9;
-        var kx = $("#FM-tree").width() / bbox.width * 0.9;
-        var k = ky > kx ? kx : ky;
-        var ty = bbox.height / 2;
-        ty = ty < 150 ? 150 : ty;
-        svg.call(zoom.transform, d3.zoomIdentity
-            .translate(10, ty + 2 * getFMNodeHeight())
-            .scale(k));
-        if (_is_block == false) {
-            $("#FM-tree").css("display", "none");
-        }
     }
 }
 // inherit
@@ -583,7 +519,7 @@ FMTree.prototype.constructor = FMTree;
 
 // View Object for Funcburst
 var Funcburst = function () {
-    ITree.call(this);
+    ITree.call(this, "#funcburst");
 
     // draw funcburst SVG
     this.drawSVG = function (model) {
@@ -660,7 +596,8 @@ var TreeController = function (data) {
                 return tree.isActiveSVG();
             })
             .forEach(function (tree) {
-                tree.drawSVG(this.model, fit = fit);
+                tree.drawSVG(this.model);
+                tree.fit();
             }, this)
     }
     // headerのreloadがclickされたときの挙動
