@@ -21,6 +21,7 @@ function TreeModel(data) {
     this.data = data;
     this.root = Object();
     this.fmroot = Object();
+    this.partition = Object();
 
     p = TreeModel.prototype;
 
@@ -29,7 +30,7 @@ function TreeModel(data) {
         this.root = d3.hierarchy(this.data, function (d) {
             return d["children"];
         });
-        this.root.eachBefore(function (node) {
+        this.root.eachAfter(function (node) {
             // set array for component-node label which width adjusted by node width
             node.label = splitStrByWidth(node.data.name, getCompLabelWidth());
             // set function-node data
@@ -53,6 +54,26 @@ function TreeModel(data) {
                     "label": splitStrByWidth(paramElm.name, getParamLabelWidth())
                 });
             });
+            // set node.value (evaluate node width including comp, func, and param)
+            var thisWidth = 1;
+            thisWidth += node.label.length
+                + node.func.reduce(function (a, b) {
+                    return a + b.label.length;
+                }, 0)
+                + node.param.reduce(function (a, b) {
+                    return a + b.label.length;
+                }, 0);
+            var childWidth = 0;
+            if (node.children) {
+                childWidth = node.children.reduce(function (a, b) {
+                    return a + b.value;
+                }, 0);
+            }
+            if (thisWidth > childWidth) {
+                node.value = thisWidth;
+            } else {
+                node.value = childWidth;
+            }
         });
 
         // func node のarrayを返す関数
@@ -245,6 +266,12 @@ function TreeModel(data) {
             })
         });
     }
+
+    // hierarchlize Funcburst Model
+    p.makeFuncburstModel = function () {
+        var partition = d3.partition();
+        partition(this.root);
+    }
 }
 
 // Tree View Interface
@@ -256,7 +283,7 @@ var ITree = function () { };
     p.fit = function () { };
 }())
 
-// Prototype Object for Component Tree
+// View Object for Component Tree
 var ComponentTree = function () {
     ITree.call(this);
 
@@ -286,8 +313,6 @@ var ComponentTree = function () {
 
     // geranerate SVG field
     this.drawSVG = function (model) {
-        // svg initialize
-        d3.select("#compTreeSVG").select("svg").remove();
         // func-nodeをSVG描画
         // func-nodeをつなぐ線の色を設定
         var xArray = model.root.funcDescendants()
@@ -412,7 +437,7 @@ var ComponentTree = function () {
 ComponentTree.prototype = Object.create(ITree.prototype);
 ComponentTree.prototype.constructor = ComponentTree;
 
-// Prototype Object for Function Means Tree
+// View Object for Function Means Tree
 var FMTree = function () {
     ITree.call(this);
 
@@ -556,14 +581,65 @@ var FMTree = function () {
 FMTree.prototype = Object.create(ITree.prototype);
 FMTree.prototype.constructor = FMTree;
 
+// View Object for Funcburst
+var Funcburst = function () {
+    ITree.call(this);
+
+    // draw funcburst SVG
+    this.drawSVG = function (model) {
+        var radius = 250;
+        var color = d3.scaleOrdinal(d3.schemeCategory20);
+
+        var x = d3.scaleLinear()
+            .range([0, 2 * Math.PI]);
+
+        var y = d3.scaleLinear()
+            .range([0, radius]);
+
+        var arc = d3.arc()
+            .startAngle(function (d) { return Math.max(0, Math.min(2 * Math.PI, x(d.x0))); })
+            .endAngle(function (d) {
+                if (d.x0 == 0 && d.x1 == 1) {
+                    return 2 * Math.PI;
+                }
+                return x(d.x1) - 0.02;
+            })
+            .innerRadius(function (d) { return Math.max(0, y(d.y0)); })
+            .outerRadius(function (d) {
+                return y(d.y1 - 0.01);
+            });
+
+        var svg = d3.select("#funcburstSVG")
+            .attr("width", "100%")
+            .attr("height", "100%")
+            .select(".treeContainer")
+            .attr("transform", "translate(" + 400 + "," + 300 + ")");
+
+        var cell = svg.select(".cell").selectAll(".node")
+            .data(model.root.descendants());
+        cell.exit().remove();
+        var enteredCell = cell.enter()
+            .append("path");
+        enteredCell.merge(cell)
+            .attr("class", "node")
+            .attr("d", arc)
+            .style("fill", function (d) { return color(d.data.name); });
+
+    }
+}
+// inherit
+Funcburst.prototype = Object.create(ITree.prototype);
+Funcburst.prototype.constructor = Funcburst;
 
 // tree instances controller
 var TreeController = function (data) {
     this.model = new TreeModel(data);
 
+    // view
     this.trees = Array();
     this.trees.push(new ComponentTree());
     this.trees.push(new FMTree());
+    this.trees.push(new Funcburst());
 
     // prototype
     p = TreeController.prototype;
@@ -575,6 +651,7 @@ var TreeController = function (data) {
     p.computeModel = function () {
         this.model.makeCompTreeModel();
         this.model.makeFMTreeModel();
+        this.model.makeFuncburstModel();
     }
     // Tree viewの再描画
     p.drawSVG = function (fit) {
@@ -719,10 +796,13 @@ var tabObserver = new MutationObserver(function (rec, obs) {
     trees.reload(fit = true);
     setEditPane();
 });
+// 各ツリーすべてを監視できるようにする必要あり
 tabObserver.observe($("main div.container").get(0), {
     attributes: true
 })
-
+tabObserver.observe($("main div.container").get(1), {
+    attributes: true
+})
 
 
 function getNodeHeight() {
