@@ -530,25 +530,26 @@ var Funcburst = function () {
         var radius = 250;
         var color = d3.scaleOrdinal(d3.schemeCategory20);
 
-        var x = d3.scaleLinear()
+        var theta = d3.scaleLinear()
             .range([0, 2 * Math.PI]);
 
-        var y = d3.scaleLinear()
+        var r = d3.scaleLinear()
             .range([0, radius]);
 
-        var arc = d3.arc()
-            .startAngle(function (d) { return Math.max(0, Math.min(2 * Math.PI, x(d.x0))); })
+        var cellArc = d3.arc()
+            .startAngle(function (d) { return Math.max(0, Math.min(2 * Math.PI, theta(d.x0))); })
             .endAngle(function (d) {
                 if (d.x0 == 0 && d.x1 == 1) {
                     return 2 * Math.PI;
                 }
-                return x(d.x1) - 0.02;
+                return theta(d.x1) - 0.02;
             })
-            .innerRadius(function (d) { return Math.max(0, y(d.y0)); })
+            .innerRadius(function (d) { return Math.max(0, r(d.y0)); })
             .outerRadius(function (d) {
-                return y(d.y1 - 0.01);
+                return r(d.y1 - 0.01);
             });
 
+        // draw sunburst
         var cell = this.svg.select(".cell").selectAll(".node")
             .data(model.root.descendants());
         cell.exit().remove();
@@ -556,9 +557,71 @@ var Funcburst = function () {
             .append("path");
         enteredCell.merge(cell)
             .attr("class", "node")
-            .attr("d", arc)
+            .attr("d", cellArc)
             .style("fill", function (d) { return color(d.data.name); });
+
+        // draw Labels for Component on each sunburst cell
+        // define curve path, based on which the label is drawn
+        var lblBase = this.svg.select("defs").selectAll(".compLabelBase")
+            .data(model.root.descendants());
+        lblBase.exit().remove();
+        var enteredlblBase = lblBase.enter()
+            .append("path");
+        enteredlblBase.merge(lblBase)
+            .attr("class", "compLabelBase")
+            .attr("id", function (d, i) {
+                return "lblBase" + i;
+            })
+            .attr("d", function (d, i) {
+                var _r = r(d.y0) + (r(d.y1) - r(d.y0)) * 0.15;
+                var _startTheta = theta(d.x0);
+                var _endTheta = theta(d.x1);
+                if (i == 0) {
+                    _r = r(d.y1);
+                    return "M" + (_r * -1) + " 0 H" + _r;
+                }
+                if (_startTheta == 0 && _endTheta == 2 * Math.PI) {
+                    _startTheta = Math.PI / 2;
+                    _endTheta = Math.PI * 3 / 2;
+                }
+                // 文字反転
+                var aveTheta = (_startTheta + _endTheta) / 2
+                if (aveTheta > Math.PI / 2 && aveTheta < Math.PI * 3 / 2) {
+                    var mx = _r * Math.sin(_endTheta);
+                    var my = _r * Math.cos(_endTheta) * -1;
+                    var sweep = 0;
+                    var ax = _r * Math.sin(_startTheta);
+                    var ay = _r * Math.cos(_startTheta) * -1;
+                } else {
+                    var mx = _r * Math.sin(_startTheta);
+                    var my = _r * Math.cos(_startTheta) * -1;
+                    var sweep = 1;
+                    var ax = _r * Math.sin(_endTheta);
+                    var ay = _r * Math.cos(_endTheta) * -1;
+                }
+                return "M" + mx + " " + my + "A" + _r + " " + _r + ", 0, 0, "
+                    + sweep + "," + ax + " " + ay;
+            });
+
+        var compLabel = this.svg.select(".label").selectAll(".compLabel")
+            .data(model.root.descendants());
+        compLabel.exit().remove();
+        var enteredCompLabel = compLabel.enter()
+            .append("text");
+        enteredCompLabel.append("textPath");
+        enteredCompLabel.merge(compLabel)
+            .attr("class", "compLabel")
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "central")
+            .attr("fill", "white")
+            .select("textPath")
+            .attr("xlink:href", function (d, i) {
+                return "#lblBase" + i;
+            })
+            .attr("startOffset", "50%")
+            .text(function (d) { return d.data.name; });
     }
+
     this.fit = function () {
         ITree.prototype.fit.call(this, xOffset = true);
     }
