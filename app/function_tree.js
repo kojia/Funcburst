@@ -271,6 +271,21 @@ function TreeModel(data) {
     p.makeFuncburstModel = function () {
         var partition = d3.partition();
         partition(this.root);
+        // lays out func- and param-nodes based on comp-node partition layout
+        var dx = 1 / this.root.value;
+        var dy = 1 / (this.root.height + 1);
+        this.root.descendants().forEach(function (d) {
+            var funcAndParam = d.func.concat(d.param);
+            var unit = d.value / (funcAndParam.length);
+            var incrUnit = 0.5 * unit;
+            var _y = (d.depth + 0.5) * dy;
+            funcAndParam.forEach(function (e) {
+                e.x0 = d.x0 + incrUnit * dx;
+                e.y0 = _y;
+                incrUnit += unit;
+            });
+        });
+
     }
 }
 
@@ -527,7 +542,7 @@ var Funcburst = function () {
 
     // draw funcburst SVG
     this.drawSVG = function (model) {
-        var radius = 250;
+        var radius = 300;
         var color = d3.scaleOrdinal(d3.schemeCategory20);
 
         var theta = d3.scaleLinear()
@@ -535,6 +550,12 @@ var Funcburst = function () {
 
         var r = d3.scaleLinear()
             .range([0, radius]);
+
+        var getXY = function(x0, y0){
+            var _x = r(y0) * Math.sin(theta(x0));
+            var _y = r(y0) * Math.cos(theta(x0)) * -1;
+            return [_x, _y];
+        }
 
         var cellArc = d3.arc()
             .startAngle(function (d) { return Math.max(0, Math.min(2 * Math.PI, theta(d.x0))); })
@@ -620,6 +641,27 @@ var Funcburst = function () {
             })
             .attr("startOffset", "50%")
             .text(function (d) { return d.data.name; });
+
+        // draw func- and param-node
+        var fpLabel = this.svg.select(".label").selectAll(".fpLabel")
+            .data(model.root.funcDescendants().concat(model.root.paramDescendants()));
+        fpLabel.exit().remove();
+        var enteredFpLabel = fpLabel.enter()
+            .append("text");
+        enteredFpLabel.merge(fpLabel)
+            .attr("class", "fpLabel")
+            .attr("transform", function(d){
+                var _xy = getXY(d.x0, d.y0);
+                return "translate(" + _xy[0] + "," + _xy[1] + ")";
+            })
+            .attr("text-anchor", function(d){
+                if(d.x0 > 0.5){
+                    return "end";
+                }
+            })
+            .text(function(d){
+                return d.data.name;
+            })
     }
 
     this.fit = function () {
