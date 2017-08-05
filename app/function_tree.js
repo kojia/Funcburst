@@ -21,7 +21,6 @@ function TreeModel(data) {
     this.data = data;
     this.root = Object();
     this.fmroot = Object();
-    this.partition = Object();
 
     p = TreeModel.prototype;
 
@@ -278,7 +277,7 @@ function TreeModel(data) {
             var funcAndParam = d.func.concat(d.param);
             var unit = d.value / (funcAndParam.length);
             var incrUnit = 0.5 * unit;
-            var _y = (d.depth + 0.5) * dy;
+            var _y = (d.depth + 0.35) * dy;
             funcAndParam.forEach(function (e) {
                 e.x0 = d.x0 + incrUnit * dx;
                 e.y0 = _y;
@@ -551,7 +550,7 @@ var Funcburst = function () {
         var r = d3.scaleLinear()
             .range([0, radius]);
 
-        var getXY = function(x0, y0){
+        var getXY = function (x0, y0) {
             var _x = r(y0) * Math.sin(theta(x0));
             var _y = r(y0) * Math.cos(theta(x0)) * -1;
             return [_x, _y];
@@ -605,7 +604,7 @@ var Funcburst = function () {
                     _startTheta = Math.PI / 2;
                     _endTheta = Math.PI * 3 / 2;
                 }
-                // 文字反転
+                // label with PI/2 < angle < 3PI/2 is flipped vertically
                 var aveTheta = (_startTheta + _endTheta) / 2
                 if (aveTheta > Math.PI / 2 && aveTheta < Math.PI * 3 / 2) {
                     var mx = _r * Math.sin(_endTheta);
@@ -624,14 +623,13 @@ var Funcburst = function () {
                     + sweep + "," + ax + " " + ay;
             });
 
-        var compLabel = this.svg.select(".label").selectAll(".compLabel")
+        var compLabel = this.svg.select(".cLabel").selectAll("text")
             .data(model.root.descendants());
         compLabel.exit().remove();
         var enteredCompLabel = compLabel.enter()
             .append("text");
         enteredCompLabel.append("textPath");
         enteredCompLabel.merge(compLabel)
-            .attr("class", "compLabel")
             .attr("text-anchor", "middle")
             .attr("dominant-baseline", "central")
             .attr("fill", "white")
@@ -643,30 +641,42 @@ var Funcburst = function () {
             .text(function (d) { return d.data.name; });
 
         // draw func- and param-node
-        var fpLabel = this.svg.select(".label").selectAll(".fpLabel")
+        var fpLabel = this.svg.select(".fpLabel").selectAll("g")
             .data(model.root.funcDescendants().concat(model.root.paramDescendants()));
         fpLabel.exit().remove();
         var enteredFpLabel = fpLabel.enter()
-            .append("text");
-        enteredFpLabel.merge(fpLabel)
-            .attr("class", "fpLabel")
-            .attr("transform", function(d){
+            .append("g");
+        enteredFpLabel.append("circle");
+        enteredFpLabel.append("text");
+        var updatedFpLabel = enteredFpLabel.merge(fpLabel)
+            .attr("transform", function (d) {
                 var _xy = getXY(d.x0, d.y0);
                 return "translate(" + _xy[0] + "," + _xy[1] + ")";
-            })
-            .attr("text-anchor", function(d){
-                if(d.x0 > 0.5){
-                    return "end";
+            });
+        updatedFpLabel.select("circle")
+            .attr("r", 4)
+            .attr("fill", function (d) {
+                if (d.isb == undefined) {
+                    return "orange";  // parameter
+                } else {
+                    return "red";  // function
                 }
             })
-            .text(function(d){
-                return d.data.name;
-            })
-    }
+            .attr("stroke", "white");
+        updatedFpLabel.select("text")
+            .attr("text-anchor", function (d) {
+            if (d.x0 > 0.5) {
+                return "end";
+            }
+        })
+        .text(function (d) {
+            return d.data.name;
+        })
+}
 
-    this.fit = function () {
-        ITree.prototype.fit.call(this, xOffset = true);
-    }
+this.fit = function () {
+    ITree.prototype.fit.call(this, xOffset = true);
+}
 }
 // inherit
 Funcburst.prototype = Object.create(ITree.prototype);
