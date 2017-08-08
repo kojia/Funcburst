@@ -270,18 +270,63 @@ function TreeModel(data) {
     p.makeFuncburstModel = function () {
         var partition = d3.partition();
         partition(this.root);
-        // lays out func- and param-nodes based on comp-node partition layout
+
+        var radian = d3.scaleLinear()
+            .range([0, 2 * Math.PI]);
+
+        // lays out each node onto the funcburst.
         var dx = 1 / this.root.value;
         var dy = 1 / (this.root.height + 1);
-        this.root.descendants().forEach(function (d) {
-            var funcAndParam = d.func.concat(d.param);
-            var unit = d.value / (funcAndParam.length);
-            var incrUnit = 0.5 * unit;
-            var _y = (d.depth + 0.35) * dy;
-            funcAndParam.forEach(function (e) {
-                e.x0 = d.x0 + incrUnit * dx;
-                e.y0 = _y;
-                incrUnit += unit;
+        this.root.descendants().forEach(function (node) {
+            var funcAndParam = node.func.concat(node.param);
+            var space = dx * node.value / (funcAndParam.length);
+            var _r = (node.depth + 0.5) * dy;
+            var prntFpY = Array();  // y coordinates of parent's func/param-node
+            if (node.parent) {
+                prntFpY = node.parent.func.concat(node.parent.param)
+                    .map(function (prntFp) {
+                        return prntFp.yfb;
+                    });
+            }
+            funcAndParam.forEach(function (fpNode, i) {
+                fpNode.x0 = node.x0 + (i + 0.5) * space;
+                fpNode.y0 = _r;
+
+                // angle index
+                var a = [0, 0.5, 1]
+                    .map(function (_a) {
+                        return node.x0 + (i + _a) * space;
+                    });
+                // yMin, yCtr, yMax
+                var y = a.map(function (_a) {
+                    return _r * Math.cos(radian(_a)) * -1;
+                }).sort(function (_a, _b) { return _a - _b; });
+                // scan parent's minimum
+                prntFpY.filter(
+                    function (value) {
+                        return value > y[0] && value < y[1];
+                    })
+                    .filter(function (val, i, arr) {
+                        return val == Math.max.apply(null, arr);
+                    })
+                    .forEach(function (d) {
+                        y[0] = d;
+                    });
+                // scan parent's maximum
+                prntFpY
+                    .filter(function (value) {
+                        return value > y[1] && value < y[2];
+                    })
+                    .filter(function (val, i, arr) {
+                        return val == Math.min.apply(null, arr);
+                    })
+                    .forEach(function (d) {
+                        y[2] = d;
+                    });
+                // set func/param-node x,y coordinate: xfb and yfb
+                fpNode.yfb = (y[0] + y[2]) / 2;
+                fpNode.xfb = Math.sqrt(Math.pow(_r, 2) - Math.pow(fpNode.yfb, 2));
+                if (a[1] > 0.5) { fpNode.xfb *= -1; };
             });
         });
 
@@ -550,12 +595,6 @@ var Funcburst = function () {
         var r = d3.scaleLinear()
             .range([0, radius]);
 
-        var getXY = function (x0, y0) {
-            var _x = r(y0) * Math.sin(theta(x0));
-            var _y = r(y0) * Math.cos(theta(x0)) * -1;
-            return [_x, _y];
-        }
-
         var cellArc = d3.arc()
             .startAngle(function (d) { return Math.max(0, Math.min(2 * Math.PI, theta(d.x0))); })
             .endAngle(function (d) {
@@ -650,8 +689,7 @@ var Funcburst = function () {
         enteredFpLabel.append("text");
         var updatedFpLabel = enteredFpLabel.merge(fpLabel)
             .attr("transform", function (d) {
-                var _xy = getXY(d.x0, d.y0);
-                return "translate(" + _xy[0] + "," + _xy[1] + ")";
+                return "translate(" + radius * d.xfb + "," + radius * d.yfb + ")";
             });
         updatedFpLabel.select("circle")
             .attr("r", 4)
@@ -665,18 +703,18 @@ var Funcburst = function () {
             .attr("stroke", "white");
         updatedFpLabel.select("text")
             .attr("text-anchor", function (d) {
-            if (d.x0 > 0.5) {
-                return "end";
-            }
-        })
-        .text(function (d) {
-            return d.data.name;
-        })
-}
+                if (d.xfb < 0) {
+                    return "end";
+                }
+            })
+            .text(function (d) {
+                return d.data.name;
+            })
+    }
 
-this.fit = function () {
-    ITree.prototype.fit.call(this, xOffset = true);
-}
+    this.fit = function () {
+        ITree.prototype.fit.call(this, xOffset = true);
+    }
 }
 // inherit
 Funcburst.prototype = Object.create(ITree.prototype);
