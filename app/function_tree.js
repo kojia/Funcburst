@@ -280,28 +280,34 @@ function TreeModel(data) {
         this.root.descendants().forEach(function (node) {
             var funcAndParam = node.func.concat(node.param);
             var space = dx * node.value / (funcAndParam.length);
-            var _r = (node.depth + 0.5) * dy;
-            var prntFpY = Array();  // y coordinates of parent's func/param-node
+            // func/param-node radius
+            var radius = (node.depth + 0.5) * dy;  // node circle center
+            var radiusInner = (node.depth + 0.4) * dy;  // for link start point
+            var radiusOuter = (node.depth + 0.6) * dy;  // for link end point
+
+            // y coordinates of parent's func/param-node
+            var prntFpY = Array();
             if (node.parent) {
                 prntFpY = node.parent.func.concat(node.parent.param)
                     .map(function (prntFp) {
                         return prntFp.yfb;
                     });
             }
+
             funcAndParam.forEach(function (fpNode, i) {
                 fpNode.x0 = node.x0 + (i + 0.5) * space;
-                fpNode.y0 = _r;
+                fpNode.y0 = radius;
 
                 // angle index
                 var a = [0, 0.5, 1]
                     .map(function (_a) {
                         return node.x0 + (i + _a) * space;
                     });
-                // yMin, yCtr, yMax
+                // y = [yMin, yCtr, yMax]
                 var y = a.map(function (_a) {
-                    return _r * Math.cos(radian(_a)) * -1;
+                    return radius * Math.cos(radian(_a)) * -1;
                 }).sort(function (_a, _b) { return _a - _b; });
-                // scan parent's minimum
+                // scan parent's minimum y coordinate and replace y[0]
                 prntFpY.filter(
                     function (value) {
                         return value > y[0] && value < y[1];
@@ -312,7 +318,7 @@ function TreeModel(data) {
                     .forEach(function (d) {
                         y[0] = d;
                     });
-                // scan parent's maximum
+                // scan parent's maximum y coordinate and replace y[2]
                 prntFpY
                     .filter(function (value) {
                         return value > y[1] && value < y[2];
@@ -325,8 +331,14 @@ function TreeModel(data) {
                     });
                 // set func/param-node x,y coordinate: xfb and yfb
                 fpNode.yfb = (y[0] + y[2]) / 2;
-                fpNode.xfb = Math.sqrt(Math.pow(_r, 2) - Math.pow(fpNode.yfb, 2));
-                if (a[1] > 0.5) { fpNode.xfb *= -1; };
+                var angle = Math.asin(fpNode.yfb / radius);
+                if (a[1] > 0.5) { angle = Math.PI - angle; }
+                fpNode.xfb = radius * Math.cos(angle);
+                fpNode.xfbS = radiusInner * Math.cos(angle);
+                fpNode.yfbS = radiusInner * Math.sin(angle);
+                fpNode.xfbE = radiusOuter * Math.cos(angle);
+                fpNode.yfbE = radiusOuter * Math.sin(angle);
+                fpNode.anglefb = angle;
             });
         });
 
@@ -678,6 +690,63 @@ var Funcburst = function () {
             })
             .attr("startOffset", "50%")
             .text(function (d) { return d.data.name; });
+
+        // draw link between func/param-nodes
+        var linkPairs = model.root.funcDescendants()
+            .concat(model.root.paramDescendants())
+            .map(function (child) {
+                return child.parents.map(function (parent) {
+                    return { "c": child, "p": parent };
+                })
+            })
+            .reduce(function (a, b) {
+                return a.concat(b);
+            }, Array());
+        var fpLink = this.svg.select(".fpLink").selectAll(".fpLinkPath")
+            .data(linkPairs);
+        fpLink.exit().remove();
+        var enteredFpLink = fpLink.enter()
+            .append("g")
+            .attr("class", "fpLinkPath");
+        enteredFpLink.append("path").attr("class", "start");
+        enteredFpLink.append("path").attr("class", "link");
+        enteredFpLink.append("path").attr("class", "end");
+        var updatedFpLink = enteredFpLink.merge(fpLink);
+        updatedFpLink.select(".link")
+            .attr("stroke", function (d) {
+                var _x = 0, _y = 0;
+                if (d.c.xfbS > d.p.xfbE) { _x = 1; }
+                if (d.c.yfbS > d.p.yfbE) { _y = 1; }
+                return "url(#rg" + String(_x) + String(_y) + ")";
+
+            })
+            .attr("fill", "none")
+            .attr("d", function (d) {
+                var sx = radius * d.c.xfbS;
+                var sy = radius * d.c.yfbS;
+                var ex = radius * d.p.xfbE;
+                var ey = radius * d.p.yfbE;
+                var q1x = sx - 0.2 * radius * Math.cos(d.c.anglefb);
+                var q1y = sy - 0.2 * radius * Math.sin(d.c.anglefb);
+                var q2x = ex + 0.2 * radius * Math.cos(d.p.anglefb);
+                var q2y = ey + 0.2 * radius * Math.sin(d.p.anglefb);;
+                return "M" + sx + "," + sy + " C" + q1x + "," + q1y + "," + q2x + "," + q2y
+                    + "," + ex + "," + ey;
+            });
+        updatedFpLink.select(".start")
+            .attr("stroke", "cyan").attr("fill", "none")
+            .attr("d", function (d) {
+                return "M" + radius * d.c.xfb + "," + radius * d.c.yfb
+                    + " L" + radius * d.c.xfbS + "," + radius * d.c.yfbS;
+            });
+        updatedFpLink.select(".end")
+            .attr("stroke", "#ffff1a").attr("fill", "none")
+            .attr("d", function (d) {
+                return "M" + radius * d.p.xfbE + "," + radius * d.p.yfbE
+                    + " L" + radius * d.p.xfb + "," + radius * d.p.yfb;
+            });
+        updatedFpLink.selectAll("path")
+            .attr("stroke-linecap", "round");
 
         // draw func- and param-node
         var fpLabel = this.svg.select(".fpLabel").selectAll("g")
