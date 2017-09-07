@@ -629,7 +629,7 @@ var Funcburst = function () {
         enteredCell.merge(cell)
             .attr("class", "node")
             .attr("d", cellArc)
-            .style("fill", function (d) { return color(d.data.name); });
+            .style("fill", "gray");
 
         // draw Labels for Component on each sunburst cell
         // define curve path, based on which the label is drawn
