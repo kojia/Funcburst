@@ -626,10 +626,36 @@ var Funcburst = function () {
         cell.exit().remove();
         var enteredCell = cell.enter()
             .append("path");
+        var _svg = this.svg;
         enteredCell.merge(cell)
             .attr("class", "node")
             .attr("d", cellArc)
-            .style("fill", "gray");
+            .style("fill", function (d) {
+                if (d.data.cat) {
+                    var colname = getCatColor(d.data.cat, "comp");
+                    console.log(document.getElementById("dotPtn" + colname.slice(1)));
+                    if (document.getElementById("dotPtn" + colname.slice(1)) === null) {
+                        _svg.select("defs")
+                            .append("pattern")
+                            .attr("id", "dotPtn" + colname.slice(1))
+                            .attr("width", "6").attr("height", "6")
+                            .attr("x", "3").attr("y", "3")
+                            .attr("patternUnits", "userSpaceOnUse")
+                            .each(function (d, i) {
+                                d3.select(this).append("rect")
+                                    .attr("width", "6").attr("height", "6")
+                                    .attr("fill", "gray");
+                                d3.select(this).append("circle")
+                                    .attr("cx", "3").attr("cy", "3")
+                                    .attr("r", "1").attr("fill", colname);
+                            });
+                    }
+                    return "url(#dotPtn" + colname.slice(1) + ")";
+                }
+                else {
+                    return "gray";
+                }
+            });
 
         // draw Labels for Component on each sunburst cell
         // define curve path, based on which the label is drawn
