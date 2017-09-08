@@ -802,6 +802,18 @@ var Funcburst = function () {
                     return "end";
                 }
             })
+            .attr("stroke", function (d) {
+                if (d.isb) {
+                    var type = "func";
+                }
+                else {
+                    var type = "param";
+                }
+                if (d.data.cat) {
+                    return getCatColor(d.data.cat, type)
+                }
+            })
+            .attr("stroke-width", "0.7px")
             .text(function (d) {
                 return d.data.name;
             })
