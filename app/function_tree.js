@@ -386,7 +386,6 @@ var ITree = function (selector) {
             _is_block = false;
             this.svg.style("display", "block");
         }
-        // var bbox = $("#compTreeSVG .treeContainer")[0].getBBox();
         var bbox = this.svg.select(".treeContainer").node().getBBox();
         var ky = parseInt(this.svg.style("height")) / bbox.height * 0.9;
         var kx = parseInt(this.svg.style("width")) / bbox.width * 0.9;
@@ -598,6 +597,7 @@ var Funcburst = function () {
 
     // draw funcburst SVG
     this.drawSVG = function (model) {
+        var _svg = this.svg;
         var radius = 300;
         var color = d3.scaleOrdinal(d3.schemeCategory20);
 
@@ -621,19 +621,17 @@ var Funcburst = function () {
             });
 
         // draw sunburst
-        var cell = this.svg.select(".cell").selectAll(".node")
+        var cell = this.svg.select(".cell").selectAll(".cellnode")
             .data(model.root.descendants());
         cell.exit().remove();
-        var enteredCell = cell.enter()
-            .append("path");
-        var _svg = this.svg;
-        enteredCell.merge(cell)
-            .attr("class", "node")
+        var enteredCell = cell.enter().append("g").attr("class", "cellnode");
+        enteredCell.append("path");
+        var updatedCell = enteredCell.merge(cell)
+        updatedCell.select("path")
             .attr("d", cellArc)
             .style("fill", function (d) {
                 if (d.data.cat) {
                     var colname = getCatColor(d.data.cat, "comp");
-                    console.log(document.getElementById("dotPtn" + colname.slice(1)));
                     if (document.getElementById("dotPtn" + colname.slice(1)) === null) {
                         _svg.select("defs")
                             .append("pattern")
@@ -656,6 +654,17 @@ var Funcburst = function () {
                     return "gray";
                 }
             });
+        updatedCell.on("click", function (d) {
+            _svg.selectAll(".selected-fill").remove()
+            var attr = d3.select(this).select("path").node().attributes;
+            var to = d3.select(this).append("path");
+            Object.keys(attr).forEach(function (key) {
+                to.attr(attr[key].name, attr[key].value);
+            });
+            to.attr("class", "selected-fill")
+                .style("fill", "#64ffda")
+                .style("fill-opacity", 0.3);
+        });
 
         // draw Labels for Component on each sunburst cell
         // define curve path, based on which the label is drawn
@@ -699,7 +708,7 @@ var Funcburst = function () {
                 return "M" + mx + " " + my + "A" + _r + " " + _r + ", 0, 0, "
                     + sweep + "," + ax + " " + ay;
             });
-
+        // draw label to component cell
         var compLabel = this.svg.select(".cLabel").selectAll("text")
             .data(model.root.descendants());
         compLabel.exit().remove();
@@ -775,11 +784,12 @@ var Funcburst = function () {
             .attr("stroke-linecap", "round");
 
         // draw func- and param-node
-        var fpLabel = this.svg.select(".fpLabel").selectAll("g")
+        var fpLabel = this.svg.select(".fpLabel").selectAll("g .label")
             .data(model.root.funcDescendants().concat(model.root.paramDescendants()));
         fpLabel.exit().remove();
         var enteredFpLabel = fpLabel.enter()
-            .append("g");
+            .append("g").attr("class", "label");
+        enteredFpLabel.append("g").attr("class", "selected");
         enteredFpLabel.append("circle");
         enteredFpLabel.append("text");
         var updatedFpLabel = enteredFpLabel.merge(fpLabel)
@@ -805,8 +815,7 @@ var Funcburst = function () {
             .attr("stroke", function (d) {
                 if (d.isb) {
                     var type = "func";
-                }
-                else {
+                } else {
                     var type = "param";
                 }
                 if (d.data.cat) {
@@ -816,7 +825,22 @@ var Funcburst = function () {
             .attr("stroke-width", "0.7px")
             .text(function (d) {
                 return d.data.name;
-            })
+            });
+
+        // fill element of selected node
+        updatedFpLabel.on("click", function (d) {
+            _svg.selectAll(".selected-fill").remove()
+            var bbox = d3.select(this).node().getBBox();
+            d3.select(this).select(".selected").append("rect")
+                .attr("x", bbox.x).attr("y", bbox.y)
+                .attr("width", bbox.width).attr("height", bbox.height)
+                .attr("fill", "#64ffda")
+                .attr("fill-opacity", 0.5)
+                .attr("class", "selected-fill");
+        });
+        _svg.select(".highlight")
+            .attr
+
     }
 
     this.fit = function () {
@@ -1884,7 +1908,7 @@ function confirmDelNode(name, f, anotherText = undefined) {
 }
 
 
-// show background fill of selected node in svg
+// fill color to emphasize selected node in svg
 function highlightNode(node) {
     d3.select("#compTreeSVG .highlight")
         .selectAll("rect").remove();
