@@ -619,6 +619,9 @@ var Funcburst = function () {
             .outerRadius(function (d) {
                 return r(d.y1 - 0.01);
             });
+        
+        // clear select
+        _svg.selectAll(".selected-fill").remove()
 
         // draw sunburst
         var cell = this.svg.select(".cell").selectAll(".cellnode")
