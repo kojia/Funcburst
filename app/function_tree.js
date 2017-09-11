@@ -473,8 +473,9 @@ var ComponentTree = function () {
                 trees.editor.setNode(d);
                 trees.editor.generatePane();
             }
-            var _clickFuncNode = function (node, i, a) {
-                return clickFuncNode(node, i, a, root);
+            var _clickFuncNode = function (d) {
+                trees.editor.setNode(d);
+                trees.editor.generatePane();
             }
             var _clickParamNode = function (node, i, a) {
                 return clickParamNode(node, i, a, root);
@@ -671,9 +672,7 @@ var Funcburst = function () {
             trees.editor.setNode(d);
             trees.editor.generatePane();
         });
-        updatedCell.filter(function (d) {
-            return getJptr(d) == selectJptr;
-        })
+        updatedCell.filter(function (d) { return getJptr(d) == selectJptr; })
             .dispatch("click");
 
         // draw Labels for Component on each sunburst cell
@@ -847,10 +846,14 @@ var Funcburst = function () {
                 .attr("fill", "#64ffda")
                 .attr("fill-opacity", 0.5)
                 .attr("class", "selected-fill");
+            trees.editor.setNode(d);
+            trees.editor.generatePane();
         });
-        _svg.select(".highlight")
-            .attr
-
+        updatedFpLabel
+            .filter(function (d) {
+                return getJptr(d) == selectJptr;
+            })
+            .dispatch("click");
     }
 
     this.fit = function () {
@@ -1024,6 +1027,92 @@ var NodeEditor = function (controller) {
                 $("#link-nav-change-comp-parent").sideNav("show");
             })
     }
+    this.addFPParentCollection = function () {
+        var self = this;
+
+        var belongTo = self.type == "func" ? self.node.isb : self.node.icb;
+        // list of parent candidate func
+        var prnts = belongTo.ancestors()
+            .reduce(function (a, b) {
+                return a.concat(b.func);
+            }, Array())
+            .filter(function (elm) {
+                // 自分自身とすでに登録済のfunc-nodeは除外
+                if (elm == self.node || self.node.parents.indexOf(elm) != -1) {
+                    return false;
+                }
+                return true;
+            })
+
+        var collection = this.d3root.append("ul")
+            .attr("class", "collection with-header");
+        collection.append("li").attr("class", "collection-header")
+            .append("h6").text("Parent")
+            .append("span").attr("class", "btn-add-comp-parent secondary-content")
+            .append("i").attr("class", "material-icons").text("add");
+        collection.selectAll("li.collection-item")
+            .data(self.node.parents).enter()
+            .append("li").attr("class", "collection-item drag")
+            .style("display", "table")
+            .text(function (d) { return d.data.name; })
+            .call(addRemoveIcon);
+
+        // parents addition nav
+        d3.select("#nav-change-comp-parent .collection-header")
+            .text('Select Parent of "' + self.node.data.name + '"');
+        var navItems = d3.select("#nav-change-comp-parent")
+            .selectAll("a.collection-item")
+            .data(prnts);
+        navItems.exit().remove();
+        var enteredNavItems = navItems.enter()
+            .append("a")
+            .attr("href", "#!")
+            .attr("class", "collection-item");
+        enteredNavItems.append("div");
+        var margedNavItems = enteredNavItems.merge(navItems);
+        margedNavItems
+            .text(function (d) { return "*".repeat(d.depth) + d.data.name; })
+            .style("color", null)
+            .on("click", function (d) {
+                var newJptr = getJptr(d.isb, "/func/" + d.isb.func.indexOf(d));
+                self.node.data.parents.push(newJptr);
+                $("#link-nav-change-comp-parent").sideNav("hide");
+                self.controller.reload(selectJptr = getJptr(self.node));
+            })
+
+        d3.select(".btn-add-comp-parent")
+            .on("click", function () {
+                $("#link-nav-change-comp-parent").sideNav("show");
+            })
+
+        // Sortable List option
+        var sortableDom = $(collection.node())[0];
+        var del = function (evt) {
+            var _del = function () {
+                evt.item.parentNode.removeChild(evt.item);  // remove element in sorable list
+                // remove element in model
+                self.node.data.parents.splice(evt.oldIndex - 1, 1);
+                self.controller.reload(selectJptr = getJptr(self.node));
+            }
+            confirmDelNode(self.node.parents[evt.oldIndex - 1].data.name, _del);
+        }
+        var sort = function (evt) {
+            var _old = evt.oldIndex;
+            var _new = evt.newIndex;
+            var _oldPrnt = self.node.data.parents[_old - 1];
+            self.node.data.parents[_old - 1] = self.node.data.parents[_new - 1];
+            self.node.data.parents[_new - 1] = _oldPrnt;
+            self.controller.reload(selectJptr = getJptr(self.node));
+        }
+        Sortable.create(sortableDom, {
+            animation: 100,
+            draggable: ".drag",
+            filter: ".js-remove",
+            onFilter: del,
+            // drag後の処理
+            onUpdate: sort
+        });
+    }
     /*
     * @param {Array} arr Data array for this collection
     * @param {str} title Collection table title
@@ -1066,10 +1155,7 @@ var NodeEditor = function (controller) {
             .append("li").attr("class", "collection-item drag")
             .style("display", "table")
             .text(function (d) { return d.name; })
-            .append("span").attr("class", "suffix")
-            .append("i")
-            .attr("class", "js-remove material-icons")
-            .text("remove_circle_outline");
+            .call(addRemoveIcon);
         // sortable option
         var sortableDom = $(collection.node())[0];
         var del = function (evt) {
@@ -1183,6 +1269,34 @@ var NodeEditor = function (controller) {
 
         $(collection.select("textarea").node()).trigger("autoresize");
     }
+    this.addBelongCollection = function () {
+        var self = this;
+        var belongTo = "";
+        if (self.type == "func") {
+            belongTo = self.node.isb.data.name;
+        }
+        else if (self.type == "param") {
+            belongTo = self.node.icb.data.name;
+        }
+        var collection = this.d3root.append("ul")
+            .attr("class", "collection with-header");
+        collection.append("li").attr("class", "collection-header")
+            .append("h6")
+            .text("Component");
+        collection.append("li").attr("class", "collection-item")
+            .text(belongTo);
+    }
+    this.addFixChildrenCollection = function () {
+        var self = this;
+        var collection = this.d3root.append("ul")
+            .attr("class", "collection with-header");
+        collection.append("li").attr("class", "collection-header")
+            .append("h6").text("Children");
+        collection.selectAll("li.collection-item")
+            .data(function () { return self.node.children ? self.node.children : [] })
+            .enter().append("li").attr("class", "collection-item")
+            .text(function (d) { return d.data.name; });
+    }
 
     this.generateCompEditPane = function () {
         this.addNameCollection();
@@ -1193,10 +1307,21 @@ var NodeEditor = function (controller) {
         this.addCompParamCollection();
         this.addNoteCollection();
     }
+    this.generateFuncEditPane = function () {
+        this.addNameCollection();
+        this.addCategoryCollection();
+        this.addBelongCollection();
+        this.addFPParentCollection();
+        this.addFixChildrenCollection();
+        this.addNoteCollection();
+    }
     this.generatePane = function () {
+        d3.select("#slide-out").selectAll("div")
+            .style("display", "none");
         this.d3root.style("display", "block");
         this.d3root.selectAll(".collection").remove();
         if (this.type == "comp") { this.generateCompEditPane(); }
+        if (this.type == "func") { this.generateFuncEditPane(); }
     }
     this.regenerate = function () {
         var _jptr = getJptr(this.node);
@@ -1408,144 +1533,6 @@ function tspanStringify(strArr) {
     return _html;
 }
 
-// func-nodeクリック時の挙動
-function clickFuncNode(node, i, a) {
-    console.log(node);
-
-    setEditPane("func");
-    highlightNode(node);
-
-    // bind name
-    d3.select("#func-edit .node-name form")
-        .call(bindName, node);
-    // bind category
-    d3.select("#func-edit .category")
-        .call(bindCategory, node, a[i], "func");
-    // bind comp-node which func is solved by (isb)
-    var isb = d3.select("#func-isb")
-        .selectAll("li.collection-item")
-        .data(function () { return node.isb ? [node.isb] : []; });
-    isb.exit().remove();
-    var enteredIsb = isb.enter()
-        .append("li");
-    var updatedIsb = enteredIsb.merge(isb)
-        .attr("class", "collection-item")
-        .text(function (d) { return d.data.name; });
-
-    // bind parent
-    d3.select("#func-parents .add")
-        .remove();  // 以前に作成したaddボタンを削除
-    var prnt = d3.select("#func-parents")
-        .selectAll("li.collection-item")
-        .data(function () { return node.parents ? node.parents : []; });
-    prnt.exit().remove();  // 減った要素を削除
-    var enteredPrnt = prnt.enter()  // 増えた要素を追加
-        .append("li")
-    var updatedPrnt = enteredPrnt.merge(prnt)  // 内容更新
-        .attr("class", "collection-item drag")
-        .text(function (d) { return d === null ? "no parent" : d.data.name; });
-    // add remove button to each parent
-    updatedPrnt.call(addRemoveIcon);
-    // insert add-parent button
-    var addParentBtn = d3.select("#func-parents")
-        .append("li").attr("class", "collection-item add")
-        .append("button").attr("class", "waves-effect waves-light btn");
-    addParentBtn.text("Add")
-        .append("i").attr("class", "material-icons left")
-        .text("add");
-    // behavior when add-parent button is clicked 
-    addParentBtn.on("click", function () {
-        // 選択されているfuncとisb関係にあるcomp-nodeのancestorにあるfuncを探索
-        var addiable = node.isb.ancestors()
-            .reduce(function (pre, _node) {
-                return pre.concat(_node.func);
-            }, Array())
-            .filter(function (elm) {
-                if (elm == node || node.parents.indexOf(elm) != -1) {
-                    return false;
-                }
-                return true;
-            })
-        var prnt = d3.select("#add-func-parent")
-            .selectAll("a.collection-item")
-            .data(addiable);
-        prnt.exit().remove();
-        var enteredPrnt = prnt.enter()
-            .append("a")
-            .attr("href", "#!")
-            .attr("class", "collection-item");
-        enteredPrnt.append("div")
-            .attr("class", "side-prnt-name");
-        enteredPrnt.append("div")
-            .attr("class", "side-prnt-isb");
-        var margedPrnt = enteredPrnt.merge(prnt);
-        // show addiable func-node
-        margedPrnt.select(".side-prnt-name")
-            .text(function (d) {
-                return d.data.name;
-            })
-        margedPrnt.select(".side-prnt-isb")
-            .text(function (d) {
-                return d.isb.data.name;
-            });
-        // click時の挙動
-        margedPrnt.on("click", function (prnt) {
-            var _ptr = getJptr(prnt.isb,
-                "/func/" + prnt.isb.func.indexOf(prnt));
-            node.data.parents.push(_ptr);
-            // データ再構築
-            $("#side-add-func-parent").sideNav("hide");
-            var _jptr = getJptr(node.isb,
-                "/func/" + node.isb.func.indexOf(node));
-            trees.reload();
-            // clickFuncNode(parseJptr(root, _jptr), i, a);
-        });
-        $("#side-add-func-parent").sideNav("show");
-    });
-    // Sortable List Option for parents of function
-    if ("funcParentsSort" in window) { funcParentsSort.destroy(); }
-    var el = document.getElementById("func-parents");
-    funcParentsSort = Sortable.create(el, {
-        animation: 100,
-        draggable: ".collection-item.drag",
-        filter: ".js-remove",
-        onFilter: function (evt) {
-            var item = evt.item;
-            var ctrl = evt.target;
-            if (Sortable.utils.is(ctrl, ".js-remove")) {  // Click on remove button
-                item.parentNode.removeChild(item); // remove sortable item
-                // 子要素の削除
-                node.data.parents.splice(evt.oldIndex - 1, 1);
-                trees.reload();
-            }
-        },
-        // drag後の処理
-        onUpdate: function (evt) {
-            var _old = evt.oldIndex;
-            var _new = evt.newIndex;
-            var _oldPrnt = node.data.parents[_old - 1];
-            node.data.parents[_old - 1] = node.data.parents[_new - 1];
-            node.data.parents[_new - 1] = _oldPrnt;
-            // データ再構築
-            trees.reload();
-        }
-    });
-
-    var cldrn = d3.select("#func-children")
-        .selectAll("li.collection-item")
-        .data(function () { return node.children ? node.children : []; });
-    cldrn.exit().remove();
-    var enteredCldrn = cldrn.enter()
-        .append("li");
-    enteredCldrn.merge(cldrn)
-        .attr("class", "collection-item drag")
-        .text(function (d) { return d.data.name; });
-
-    // bind note
-    d3.select("#func-edit").select(".note textarea")
-        .call(bindNote, node, a[i]);
-}
-
 // param-nodeクリック時の挙動
 function clickParamNode(node, i, a) {
     console.log(node);
@@ -1718,12 +1705,18 @@ function makeNewParam(name) {
 
 // get json-pointer of the node
 function getJptr(node, ptr = "") {
-    if (node.parent === null) {
+    if (node.isb) {
+        var idx = node.isb.func.indexOf(node);
+        return getJptr(node.isb, "/func/" + idx + ptr);
+    } else if (node.icb) {
+        var idx = node.icb.param.indexOf(node);
+        return getJptr(node.icb, "/param/" + idx + ptr);
+    }
+    else if (node.parent === null) {
         return ptr;
     } else {
-        var _ref = node.parent.children.indexOf(node);
-        var _ptr = ptr === "" ? "" : ptr;
-        return getJptr(node.parent, "/children/" + _ref + _ptr);
+        var idx = node.parent.children.indexOf(node);
+        return getJptr(node.parent, "/children/" + idx + ptr);
     }
 }
 
