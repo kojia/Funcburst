@@ -358,7 +358,7 @@ var ITree = function (selector) {
         }
         return true;
     };
-    p.drawSVG = function (model, fit) { };
+    p.drawSVG = function (model, selectJptr = undefined) { };
     p.setZoom = function () {
         var zoomed = function (svg) {
             return function () {
@@ -469,8 +469,9 @@ var ComponentTree = function () {
             var className = type + "Node";
             var circleRadius = { "comp": 4, "func": 3, "param": 3 };
             var circleColor = { "comp": "teal", "func": "red", "param": "orange" };
-            var _clickCompNode = function (node, i, a) {
-                return clickCompNode(node, i, a, root);
+            var _clickCompNode = function (d, i, a) {
+                trees.editor.setNode(d);
+                trees.editor.generatePane();
             }
             var _clickFuncNode = function (node, i, a) {
                 return clickFuncNode(node, i, a, root);
@@ -596,7 +597,7 @@ var Funcburst = function () {
     ITree.call(this, "#funcburst");
 
     // draw funcburst SVG
-    this.drawSVG = function (model) {
+    this.drawSVG = function (model, selectJptr = undefined) {
         var _svg = this.svg;
         var radius = 300;
         var color = d3.scaleOrdinal(d3.schemeCategory20);
@@ -619,9 +620,9 @@ var Funcburst = function () {
             .outerRadius(function (d) {
                 return r(d.y1 - 0.01);
             });
-        
+
         // clear select
-        _svg.selectAll(".selected-fill").remove()
+        _svg.selectAll(".selected-fill").remove();
 
         // draw sunburst
         var cell = this.svg.select(".cell").selectAll(".cellnode")
@@ -657,8 +658,8 @@ var Funcburst = function () {
                     return "gray";
                 }
             });
-        updatedCell.on("click", function (d) {
-            _svg.selectAll(".selected-fill").remove()
+        updatedCell.on("click", function (d, i, a) {
+            _svg.selectAll(".selected-fill").remove();
             var attr = d3.select(this).select("path").node().attributes;
             var to = d3.select(this).append("path");
             Object.keys(attr).forEach(function (key) {
@@ -667,7 +668,13 @@ var Funcburst = function () {
             to.attr("class", "selected-fill")
                 .style("fill", "#64ffda")
                 .style("fill-opacity", 0.3);
+            trees.editor.setNode(d);
+            trees.editor.generatePane();
         });
+        updatedCell.filter(function (d) {
+            return getJptr(d) == selectJptr;
+        })
+            .dispatch("click");
 
         // draw Labels for Component on each sunburst cell
         // define curve path, based on which the label is drawn
@@ -832,7 +839,7 @@ var Funcburst = function () {
 
         // fill element of selected node
         updatedFpLabel.on("click", function (d) {
-            _svg.selectAll(".selected-fill").remove()
+            _svg.selectAll(".selected-fill").remove();
             var bbox = d3.select(this).node().getBBox();
             d3.select(this).select(".selected").append("rect")
                 .attr("x", bbox.x).attr("y", bbox.y)
@@ -854,9 +861,354 @@ var Funcburst = function () {
 Funcburst.prototype = Object.create(ITree.prototype);
 Funcburst.prototype.constructor = Funcburst;
 
+// node editor
+var NodeEditor = function (controller) {
+    this.controller = controller;
+    this.modelroot = controller.model.root;
+    this.node = undefined;
+    this.d3root = undefined;
+    this.type = undefined;
+    // set node
+    this.setNode = function (node) {
+        console.log(node);
+        this.node = node;
+        this.modelroot = controller.model.root;
+        if (node.isb) {
+            this.type = "func";
+            this.d3root = d3.select("#func-edit");
+        } else if (node.icb) {
+            this.type = "param";
+            this.d3root = d3.select("#param-edit");
+        } else {
+            this.type = "comp";
+            this.d3root = d3.select("#comp-edit");
+        }
+    }
+    // specific collection generator
+    this.addNameCollection = function () {
+        var title = "";
+        if (this.type == "func") { title = "Function Name"; }
+        else if (this.type == "param") { title = "Parameter Name"; }
+        else { title = "Component Name"; }
+        var self = this;
+        var collection = this.d3root.append("ul")
+            .attr("class", "collection with-header");
+        collection.append("li").attr("class", "collection-header")
+            .append("h6")
+            .text(title);
+        collection.append("li").attr("class", "collection-item")
+            .append("form").attr("onsubmit", "return false;")
+            .append("input")
+            .attr("value", self.node.data.name)
+            .on("change", function () {
+                self.node.data.name = d3.event.target.value;
+                self.controller.reload(selectJptr = getJptr(self.node));
+            });
+    }
+    this.addCategoryCollection = function () {
+        var self = this;
+        var categoryList = ["uncategolized"];
+        if (category[this.type]) {
+            categoryList = categoryList.concat(category[this.type]);
+        }
+        var collection = this.d3root.append("ul")
+            .attr("class", "collection with-header")
+            .style("overflow", "visible");
+        collection.append("li").attr("class", "collection-header")
+            .append("h6").text("Category")
+            .append("span").attr("class", "btn-edit-cat secondary-content")
+            .append("i").attr("class", "material-icons").text("list");
+        collection.append("li").attr("class", "collection-item")
+            .append("div").attr("class", "input-field")
+            .append("select")
+            .selectAll("option").data(categoryList)
+            .enter().append("option")
+            .attr("value", function (d) { return categoryList.indexOf(d); })
+            .text(function (d) { return d; });
+        // set category already set on the selected node
+        collection.select("select").property("value", function () {
+            return categoryList.indexOf(self.node.data.cat);
+        });
+        // change category
+        $(collection.select("select").node()).off("change");
+        $(collection.select("select").node()).on("change", function () {
+            var _selectValue = collection.select("select").property("value")
+            if (_selectValue != 0) {
+                self.node.data.cat = categoryList[_selectValue];
+            } else {
+                self.node.data.cat = "";
+            }
+            self.controller.reload();
+            self.regenerate();
+        });
+        // update materialize select forms
+        $("select").material_select();
+        // category edit button
+        collection.select(".btn-edit-cat")
+            .on("click", function () {
+                $("#modal-category").modal("open");
+                updateCatSettings(function () {
+                    self.regenerate();
+                });
+            })
+    }
+
+    this.addParentCollection = function () {
+        var self = this;
+        var prnts = [];  // list of parent candidate
+        var thisNodeJptrRe = RegExp("^" + getJptr(this.node));
+        this.modelroot.eachBefore(function (node) {
+            // skip this node
+            if (getJptr(node).match(thisNodeJptrRe)) { return; }
+            prnts.push(node);
+        });
+
+        var collection = this.d3root.append("ul")
+            .attr("class", "collection with-header");
+        collection.append("li").attr("class", "collection-header")
+            .append("h6").text("Parent")
+            .append("span").attr("class", "btn-change-comp-parent secondary-content")
+            .append("i").attr("class", "material-icons").text("swap_horiz");
+        collection.append("li").attr("class", "collection-item")
+            .text(function (d) {
+                return self.node.parent ? self.node.parent.data.name : "no parent";
+            });
+
+        // parents change nav
+        d3.select("#nav-change-comp-parent .collection-header")
+            .text('Select Parent of "' + self.node.data.name + '"');
+        var navItems = d3.select("#nav-change-comp-parent")
+            .selectAll("a.collection-item")
+            .data(prnts);
+        navItems.exit().remove();
+        var enteredNavItems = navItems.enter()
+            .append("a")
+            .attr("href", "#!")
+            .attr("class", "collection-item");
+        enteredNavItems.append("div");
+        var margedNavItems = enteredNavItems.merge(navItems);
+        margedNavItems
+            .classed("disabled", function (d) {
+                return d == self.node.parent ? true : false;
+            })
+            .style("color", function (d) {
+                if (this.getAttribute("class").match(/disabled/)) { return "red"; }
+            })
+            .text(function (d) { return "*".repeat(d.depth) + d.data.name; })
+            .on("click", function (d) {
+                if (this.getAttribute("class").match(/disabled/)) {
+                    return;
+                } else {
+                    $("#link-nav-change-comp-parent").sideNav("hide");
+                    return changeParent(d);
+                }
+            })
+
+        var changeParent = function (prnt) {
+            var oldIndex = self.node.parent.children.indexOf(self.node);
+            var oldPtr = getJptr(self.node);
+            var newIndex = prnt.data.children === undefined ? 0 : prnt.data.children.length;
+            var newPtr = getJptr(prnt) + "/children/" + newIndex;
+            swapJptr(self.node, oldPtr, newPtr);
+            if (prnt.data.children === undefined) {
+                prnt.data.children = Array();
+            }
+            prnt.data.children.push(self.node.data);
+            self.node.parent.data.children.splice(oldIndex, 1);
+            delJptr(oldPtr, self.modelroot);
+            self.controller.reload(selectJptr = newPtr);
+        }
+
+        d3.select(".btn-change-comp-parent")
+            .on("click", function () {
+                $("#link-nav-change-comp-parent").sideNav("show");
+            })
+    }
+    /*
+    * @param {Array} arr Data array for this collection
+    * @param {str} title Collection table title
+    * @param {str} modalTitle
+    * @param {str} divider JSON pointer divider for array
+    * @param {function(str)} add Input string is given as argument.
+    */
+    this.addVaribleNumberCollection = function (arr, title, modalTitle, divider, add) {
+        var self = this;
+        d3.select("#modal-add-element").select("h4")
+            .text(modalTitle);
+        var _add = function () {
+            var inputstr = $("#input-modal-add-element").val();
+            add(inputstr);
+        }
+
+        var collection = this.d3root.append("ul")
+            .attr("class", "collection with-header");
+        collection.append("li").attr("class", "collection-header")
+            .append("h6").text(title)
+            .append("span").attr("class", "btn-add-child secondary-content")
+            .append("i").attr("class", "material-icons").text("add")
+            // add new child
+            .on("click", function () {
+                $("#modal-add-element").modal("open");
+                $("#modal-add-element form")[0].reset();  // inputテキストボックスを空にする
+                $("#input-modal-add-element").focus();  // テキストボックスにフォーカス
+                d3.select("#modal-add-element form")
+                    .on("submit", function () {
+                        _add();
+                        $("#modal-add-element").modal("close");
+                        return false;
+                    });
+                d3.select("#modal-add-element a")  // behavior when AGREE button clicked
+                    .on("click", function () { return _add() });
+            });
+        collection.selectAll("li.collection-item")
+            .data(arr)
+            .enter()
+            .append("li").attr("class", "collection-item drag")
+            .style("display", "table")
+            .text(function (d) { return d.name; })
+            .append("span").attr("class", "suffix")
+            .append("i")
+            .attr("class", "js-remove material-icons")
+            .text("remove_circle_outline");
+        // sortable option
+        var sortableDom = $(collection.node())[0];
+        var del = function (evt) {
+            var _del = function () {
+                evt.item.parentNode.removeChild(evt.item);  // remove element in sorable list
+                // remove element in model
+                arr.splice(evt.oldIndex - 1, 1);
+                var _jptr = getJptr(self.node);
+                _jptr += "/" + divider + "/" + String(evt.oldIndex - 1);
+                delJptr(_jptr, self.modelroot)
+                self.controller.reload(selectJptr = getJptr(self.node));
+            }
+            confirmDelNode(arr[evt.oldIndex - 1].name, _del);
+        }
+        var sort = function (evt) {
+            var oldi = evt.oldIndex;
+            var newi = evt.newIndex;
+            var _jptr = getJptr(self.node);
+            var oldJptr = _jptr + "/" + divider + "/" + (oldi - 1);
+            var newJptr = _jptr + "/" + divider + "/" + (newi - 1);
+            // temporary variable of old element
+            var _t = arr[oldi - 1];
+            // old <- new
+            arr[oldi - 1] = arr[newi - 1];
+            // new <- old
+            arr[newi - 1] = _t;
+            // swap json pointer indicating parent of func-, param-node
+            swapJptr(self.node, oldJptr, newJptr);
+            // データ再構築
+            self.controller.reload(_jptr);
+        }
+        Sortable.create(sortableDom, {
+            animation: 100,
+            draggable: ".drag",
+            filter: ".js-remove",
+            onFilter: del,
+            // drag後の処理
+            onUpdate: sort
+        });
+    }
+    this.addCompChildrenCollection = function () {
+        var self = this;
+        // create new child for modal input
+        var addChild = function (newName) {
+            var newCompObj = makeNewComp(newName);
+            if (self.node.data.children === undefined) {
+                self.node.data["children"] = [];
+            }
+            self.node.data.children.push(newCompObj);
+            var newJptr = getJptr(self.node);
+            self.controller.reload(selectJptr = newJptr);
+        }
+        var arr = this.node.data.children ? this.node.data.children : [];
+        var modalTitle = "Input New Children Component Name"
+        this.addVaribleNumberCollection(arr, "Children", modalTitle, "children", addChild);
+    }
+    this.addCompFuncCollection = function () {
+        var self = this;
+        // create new func for modal input
+        var addFunc = function (newName) {
+            var newObj = makeNewFunc(newName);
+            if (self.node.data.func === undefined) {
+                self.node.data["func"] = [];
+            }
+            self.node.data.func.push(newObj);
+            var newJptr = getJptr(self.node);
+            self.controller.reload(selectJptr = newJptr);
+        }
+        var arr = this.node.data.func ? this.node.data.func : [];
+        var modalTitle = "Input New Function Name"
+        this.addVaribleNumberCollection(arr, "Function", modalTitle, "func", addFunc);
+    }
+    this.addCompParamCollection = function () {
+        var self = this;
+        // create new param for modal input
+        var addParam = function (newName) {
+            var newObj = makeNewParam(newName);
+            if (self.node.data.param === undefined) {
+                self.node.data["param"] = [];
+            }
+            self.node.data.param.push(newObj);
+            var newJptr = getJptr(self.node);
+            self.controller.reload(selectJptr = newJptr);
+        }
+        var arr = this.node.data.param ? this.node.data.param : [];
+        var modalTitle = "Input New Parameter Name"
+        this.addVaribleNumberCollection(arr, "Parameter", modalTitle, "param", addParam);
+    }
+    this.addNoteCollection = function () {
+        var self = this;
+        var noteStr = "";
+        if (self.node.data.note) {
+            noteStr = self.node.data.note;
+        } else {
+            self.node.data.note = "";
+        }
+
+        var collection = this.d3root.append("ul")
+            .attr("class", "collection with-header");
+        collection.append("li").attr("class", "collection-header")
+            .append("h6")
+            .text("Note");
+        collection.append("li").attr("class", "collection-item")
+            .append("div").attr("class", "input-field")
+            .append("textarea").attr("class", "materialize-textarea")
+            .property("value", noteStr)
+            .on("change", function () {
+                self.node.data.note = d3.select(this).property("value");
+                self.controller.reload(selectJptr = getJptr(self.node));
+            });
+
+        $(collection.select("textarea").node()).trigger("autoresize");
+    }
+
+    this.generateCompEditPane = function () {
+        this.addNameCollection();
+        this.addCategoryCollection();
+        this.addParentCollection();
+        this.addCompChildrenCollection();
+        this.addCompFuncCollection();
+        this.addCompParamCollection();
+        this.addNoteCollection();
+    }
+    this.generatePane = function () {
+        this.d3root.style("display", "block");
+        this.d3root.selectAll(".collection").remove();
+        if (this.type == "comp") { this.generateCompEditPane(); }
+    }
+    this.regenerate = function () {
+        var _jptr = getJptr(this.node);
+        this.setNode(parseJptr(this.modelroot, _jptr));
+        this.generatePane();
+    }
+}
+
 // tree instances controller
 var TreeController = function (data) {
     this.model = new TreeModel(data);
+    this.editor = new NodeEditor(this);
 
     // view
     this.trees = Array();
@@ -877,20 +1229,20 @@ var TreeController = function (data) {
         this.model.makeFuncburstModel();
     }
     // Tree viewの再描画
-    p.drawSVG = function (fit) {
+    p.drawSVG = function (fit, selectJptr) {
         this.trees
             .filter(function (tree) {
                 return tree.isActiveSVG();
             })
             .forEach(function (tree) {
-                tree.drawSVG(this.model);
+                tree.drawSVG(this.model, selectJptr);
                 tree.fit();
             }, this)
     }
-    // headerのreloadがclickされたときの挙動
-    p.reload = function () {
+
+    p.reload = function (selectJptr = undefined) {
         this.computeModel();
-        this.drawSVG(true);
+        this.drawSVG(true, selectJptr);
     };
     // 画面遷移したことをtreeのインスタンスに通知
     p.notice = function () {
@@ -1012,13 +1364,13 @@ $("#show-svg").click(function () {
 });
 // reload action when reload button is clicked
 $("#reload").click(function () {
-    trees.reload(fit = true);
     setEditPane();
+    trees.reload(fit = true);
 });
 // reload action when tab transition
 var tabObserver = new MutationObserver(function (rec, obs) {
-    trees.reload(fit = true);
     setEditPane();
+    trees.reload(fit = true);
 });
 // 各ツリーすべてを監視できるようにする必要あり
 tabObserver.observe($("main div.container").get(0), {
@@ -1054,375 +1406,6 @@ function tspanStringify(strArr) {
             + str + '</tspan>';
     });
     return _html;
-}
-
-// componentノードクリック時の挙動
-function clickCompNode(node, i, a, root) {
-    console.log(node);
-    var root = root;
-    setEditPane("comp");
-    highlightNode(node);
-
-    // bind name
-    d3.select("#comp-edit .node-name form")
-        .call(bindName, node);
-    // bind category
-    d3.select("#comp-edit .category")
-        .call(bindCategory, node, a[i], "comp");
-    // bind parent
-    var prnt = d3.select("#comp-parent")
-        .selectAll("li.collection-item")
-        .data(function () { return node.parent ? [node.parent] : []; });
-    prnt.exit().remove();  // 減った要素を削除
-    var enteredPrnt = prnt.enter()  // 増えた要素を追加
-        .append("li");
-    enteredPrnt.append("input");
-    enteredPrnt.merge(prnt)  // 内容更新
-        .attr("class", "collection-item")
-        .text(function (d) { return d === null ? "no parent" : d.data.name; });
-    // change component parent
-    d3.select("#btn-change-comp-parent")
-        .on("click", function () {
-            d3.select("#nav-change-comp-parent .collection-header")
-                .text('Select Parent of "' + node.data.name + '"');
-            var prnts = []; // parent候補
-            var dataPtr = getJptr(node);
-            var dataPtrRe = RegExp("^" + dataPtr);
-            root.eachBefore(function (node) {
-                // 選択しているnodeのdescendantは除く
-                if (getJptr(node).match(dataPtrRe)) {
-                    return;
-                }
-                prnts.push(node);
-            });
-            var prnt = d3.select("#nav-change-comp-parent")
-                .selectAll("a.collection-item")
-                .data(prnts);
-            prnt.exit().remove();
-            var enteredPrnt = prnt.enter()
-                .append("a")
-                .attr("href", "#!")
-                .attr("class", "collection-item");
-            enteredPrnt.append("div");
-            var margedPrnt = enteredPrnt.merge(prnt);
-            // show addiable component
-            margedPrnt
-                .classed("disabled", function (d) {
-                    return d == node.parent ? true : false;
-                })
-                .style("color", function (d) {
-                    if (this.getAttribute("class").match(/disabled/)) {
-                        return "red";
-                    } else {
-                        return;
-                    }
-                })
-                .text(function (d) {
-                    return "*".repeat(d.depth) + d.data.name;
-                })
-                .on("click", function (d) {
-                    if (this.getAttribute("class").match(/disabled/)) {
-                        return;
-                    } else {
-                        $("#link-nav-change-comp-parent").sideNav("hide");
-                        return changeParent(d);
-                    }
-                })
-            var changeParent = function (prnt) {
-                var oldIndex = node.parent.children.indexOf(node);
-                var oldPtr = getJptr(node);
-                var newIndex = prnt.data.children === undefined ? 0 : prnt.data.children.length;
-                var newPtr = getJptr(prnt) + "/children/" + newIndex;
-                swapJptr(node, oldPtr, newPtr);
-                if (prnt.data.children === undefined) {
-                    prnt.data.children = Array();
-                }
-                prnt.data.children.push(node.data);
-                node.parent.data.children.splice(oldIndex, 1);
-                delJptr(oldPtr, root);
-                trees.reload(fit = true);
-                setEditPane();
-            }
-            $("#link-nav-change-comp-parent").sideNav("show");
-        });
-
-    // bind children
-    var cldrn = d3.select("#comp-children")
-        .selectAll("li.collection-item")
-        .data(function () { return node.children ? node.children : []; });
-    cldrn.exit().remove();
-    var enteredCldrn = cldrn.enter()
-        .append("li");
-    enteredCldrn.merge(cldrn)
-        .attr("class", "collection-item drag")
-        .text(function (d) { return d.data.name; });
-    // add remove button for children
-    d3.select("#comp-children")
-        .selectAll("li.collection-item")
-        .call(addRemoveIcon);
-    // insert add-child button
-    var addChildBtn = d3.select("#comp-children")
-        .append("li")
-        .attr("class", "collection-item add")
-        .append("button")
-        .attr("class", "waves-effect waves-light btn")
-        .attr("href", "#modal-comp-add-child");
-    addChildBtn.text("Add")
-        .append("i").attr("class", "material-icons left")
-        .text("add");
-    // behavior when add-child button is clicked 
-    var addChild = function () {
-        var _compName = $("#input-comp-add-child").val();
-        var newObj = makeNewComp(_compName);
-        if (node.data.children === undefined) {
-            node.data["children"] = [];
-        }
-        node.data.children.push(newObj);
-        var _jptr = getJptr(node);
-        trees.reload(fit = true);
-        clickCompNode(parseJptr(root, _jptr), i, a, root);
-    }
-    addChildBtn.on("click", function () {
-        $("#modal-comp-add-child").modal("open");
-        // add child when enter key pressed
-        d3.select("#modal-comp-add-child form")
-            .on("submit", function () {
-                addChild();
-                $("#modal-comp-add-child").modal("close");
-                return false;
-            });
-        $("#modal-comp-add-child form")[0].reset();  // inputテキストボックスを空にする
-        $("#input-comp-add-child").focus();  // テキストボックスにフォーカス
-        d3.select("#modal-comp-add-child a")  // behavior when AGREE button clicked
-            .on("click", addChild);
-    });
-    // Sortable List Option for Children
-    if ("compChildrenSort" in window) { compChildrenSort.destroy(); }
-    var el = document.getElementById("comp-children");
-    compChildrenSort = Sortable.create(el, {
-        animation: 100,
-        draggable: ".collection-item.drag",
-        filter: ".js-remove",
-        onFilter: function (evt) {
-            var item = evt.item;
-            var ctrl = evt.target;
-            if (Sortable.utils.is(ctrl, ".js-remove")) {  // Click on remove button
-                var _del = function () {
-                    item.parentNode.removeChild(item); // remove sortable item
-                    // 子Nodeの削除
-                    node.data.children.splice(evt.oldIndex - 1, 1);
-                    // 子Node削除によりjson pointerが繰り上がる
-                    var _jptr = node == root ? "" : getJptr(node);
-                    _jptr += "/children/" + String(evt.oldIndex - 1);
-                    delJptr(_jptr, root)
-                    trees.reload();
-                    clickCompNode(parseJptr(root, getJptr(node)), i, a, root)
-                }
-                confirmDelNode(node.data.children[evt.oldIndex - 1].name, _del);
-            }
-        },
-        // drag後の処理
-        onUpdate: function (evt) {
-            var _old = evt.oldIndex;
-            var _new = evt.newIndex;
-            var _jptr = node == root ? "" : getJptr(node);
-            var _jptr_old = _jptr + "/children/" + (_old - 1);
-            var _jptr_new = _jptr + "/children/" + (_new - 1);
-            // temporary variable of child element of evt.oldIndex
-            var _t = node.data.children[_old - 1];
-            // old <- new
-            node.data.children[_old - 1] = node.data.children[_new - 1];
-            // new <- old
-            node.data.children[_new - 1] = _t;
-            // swap json pointer indicating parent of func-, param-node
-            swapJptr(node, _jptr_old, _jptr_new);
-            // データ再構築
-            var _jptr = getJptr(node);
-            trees.reload();
-            clickCompNode(parseJptr(root, _jptr), i, a, root);
-        }
-    });
-
-    // bind func-nodes
-    var func = d3.select("#comp-func")
-        .selectAll("li.collection-item")
-        .data(function () { return node.func ? node.func : []; });
-    func.exit().remove();
-    var enteredFunc = func.enter()
-        .append("li");
-    var updatedFunc = enteredFunc.merge(func)
-        .attr("class", "collection-item drag")
-        .text(function (d) { return d.data.name; });
-    // add remove button for func-Node
-    updatedFunc.call(addRemoveIcon);
-    // insert add-func-node button
-    var addFuncBtn = d3.select("#comp-func")
-        .append("li").attr("class", "collection-item add")
-        .append("button").attr("class", "waves-effect waves-light btn");
-    addFuncBtn.text("Add")
-        .append("i").attr("class", "material-icons left")
-        .text("add");
-    // behavior when add-func-node button is clicked 
-    var addFunc = function () {
-        var _name = $("#input-comp-add-func").val();
-        var newObj = makeNewFunc(_name);
-        if (node.data.func === undefined) {
-            node.data["func"] = [];
-        }
-        node.data.func.push(newObj);
-        var _jptr = getJptr(node);
-        trees.reload();
-        clickCompNode(parseJptr(root, _jptr), i, a, root);
-    }
-    addFuncBtn.on("click", function () {
-        $("#modal-comp-add-func").modal("open");
-        // add func-node when enter key pressed
-        d3.select("#modal-comp-add-func form")
-            .on("submit", function () {
-                addFunc();
-                $("#modal-comp-add-func").modal("close");
-                return false;
-            });
-        $("#modal-comp-add-func form")[0].reset();  // inputテキストボックスを空にする
-        $("#input-comp-add-func").focus();  // テキストボックスにフォーカス
-        d3.select("#modal-comp-add-func a")  // behavior when AGREE button clicked
-            .on("click", addFunc);
-    });
-    // func-Node のSortable設定
-    if ("compFuncSort" in window) { compFuncSort.destroy(); }
-    var el_func = document.getElementById("comp-func");
-    compFuncSort = Sortable.create(el_func, {
-        animation: 100,
-        draggable: ".collection-item.drag",
-        filter: ".js-remove",
-        onFilter: function (evt) {
-            var item = evt.item;
-            var ctrl = evt.target;
-            if (Sortable.utils.is(ctrl, ".js-remove")) {  // Click on remove button
-                var _del = function () {
-                    item.parentNode.removeChild(item); // remove sortable item
-                    // dataから削除
-                    node.data.func.splice(evt.oldIndex - 1, 1);
-                    // 削除したfunc-nodeを親としているjson pointerを削除
-                    var _jptr = getJptr(node) + "/func/" + String(evt.oldIndex - 1);
-                    delJptr(_jptr, root);
-                    // データ再構築
-                    var _jptr = getJptr(node);
-                    trees.reload();
-                    clickCompNode(parseJptr(root, _jptr), i, a, root);
-                }
-                confirmDelNode(node.data.func[evt.oldIndex - 1].name, _del);
-            }
-        },
-        // drag後の処理
-        onUpdate: function (evt) {
-            var _old = evt.oldIndex;
-            var _new = evt.newIndex;
-            var _jptr = node == root ? "" : getJptr(node);
-            var _jptr_old = _jptr + "/func/" + (_old - 1);
-            var _jptr_new = _jptr + "/func/" + (_new - 1);
-            // temporary variable for func-node element of evt.oldIndex
-            var _t = node.data.func[_old - 1];
-            // old <- new
-            node.data.func[_old - 1] = node.data.func[_new - 1];
-            // new <- old
-            node.data.func[_new - 1] = _t;
-            // swap
-            swapJptr(node, _jptr_old, _jptr_new);
-            // データ再構築
-            var _jptr = getJptr(node);
-            trees.reload();
-            clickCompNode(parseJptr(root, _jptr), i, a, root);
-        }
-    });
-
-    // bind param-node 
-    var param = d3.select("#comp-param")
-        .selectAll("li.collection-item")
-        .data(function () { return node.param ? node.param : []; });
-    param.exit().remove();
-    var enteredParam = param.enter()
-        .append("li");
-    var updatedParam = enteredParam.merge(param)
-        .attr("class", "collection-item drag")
-        .text(function (d) { return d.data.name; });
-    // add remove button for param-Node
-    updatedParam.call(addRemoveIcon);
-    // insert add-param-node button
-    var addParamBtn = d3.select("#comp-param")
-        .append("li").attr("class", "collection-item add")
-        .append("button").attr("class", "waves-effect waves-light btn");
-    addParamBtn.text("Add")
-        .append("i").attr("class", "material-icons left")
-        .text("add");
-    // behavior when add-param-node button is clicked 
-    var addParam = function () {
-        var _name = $("#input-comp-add-param").val();
-        var newObj = makeNewParam(_name);
-        if (node.data.param === undefined) {
-            node.data["param"] = [];
-        }
-        node.data.param.push(newObj);
-        var _jptr = getJptr(node);
-        trees.reload();
-        clickCompNode(parseJptr(root, _jptr), i, a, root);
-    }
-    addParamBtn.on("click", function () {
-        $("#modal-comp-add-param").modal("open");
-        // add param-node when enter key pressed
-        d3.select("#modal-comp-add-param form")
-            .on("submit", function () {
-                addParam();
-                $("#modal-comp-add-param").modal("close");
-                return false;
-            });
-        $("#modal-comp-add-param form")[0].reset();  // inputテキストボックスを空にする
-        $("#input-comp-add-param").focus();  // テキストボックスにフォーカス
-        d3.select("#modal-comp-add-param a")  // behavior when AGREE button clicked
-            .on("click", addParam);
-    });
-    // Sortable list option for param of component
-    if ("compParamSort" in window) { compParamSort.destroy(); }
-    var el_param = document.getElementById("comp-param");
-    compParamSort = Sortable.create(el_param, {
-        animation: 100,
-        draggable: ".collection-item.drag",
-        filter: ".js-remove",
-        onFilter: function (evt) {
-            var item = evt.item;
-            var ctrl = evt.target;
-            if (Sortable.utils.is(ctrl, ".js-remove")) {  // Click on remove button
-                var _del = function () {
-                    item.parentNode.removeChild(item); // remove sortable item
-                    // dataから削除
-                    node.data.param.splice(evt.oldIndex - 1, 1);
-                    // データ再構築
-                    var _jptr = getJptr(node);
-                    trees.reload();
-                    clickCompNode(parseJptr(root, _jptr), i, a, root);
-                }
-                confirmDelNode(node.data.param[evt.oldIndex - 1].name, _del);
-            }
-        },
-        // drag後の処理
-        onUpdate: function (evt) {
-            var _old = evt.oldIndex;
-            var _new = evt.newIndex;
-            // temporary variable for func-node element of evt.oldIndex
-            var _t = node.data.param[_old - 1];
-            // old <- new
-            node.data.param[_old - 1] = node.data.param[_new - 1];
-            // new <- old
-            node.data.param[_new - 1] = _t;
-            // データ再構築
-            var _jptr = getJptr(node);
-            trees.reload();
-            clickCompNode(parseJptr(root, _jptr), i, a, root);
-        }
-    });
-    // bind note
-    d3.select("#comp-edit").select(".note textarea")
-        .call(bindNote, node, a[i]);
 }
 
 // func-nodeクリック時の挙動
