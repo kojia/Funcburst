@@ -1933,50 +1933,6 @@ function separate(getSub, a, b) {
     }
 };
 
-// bind category
-// use from d3.select.call()
-// selection: "category"-classed <ul> element
-// type: what is editting in pane (comp / func / param)
-function bindCategory(selection, node, svgNode, type) {
-    var catList = ["uncategolized"];
-    if (category[type]) {
-        catList = catList.concat(category[type]);
-    }
-    var selElm = selection.select("select");
-    var cat = selElm.selectAll("option")
-        .data(catList);
-    cat.exit().remove();
-    var enteredCat = cat.enter()
-        .append("option");
-    enteredCat.merge(cat)
-        .attr("value", function (d) { return catList.indexOf(d); })
-        .text(function (d) { return d; });
-    // set category which has already set on the selected node
-    selElm.property("value", function () {
-        return catList.indexOf(node.data.cat);
-    });
-    // change category
-    $(selElm.node()).off("change");
-    $(selElm.node()).on("change", function () {
-        if (selElm.property("value") != 0) {
-            node.data.cat = catList[selElm.property("value")];
-        } else {
-            node.data.cat = "";
-        }
-        d3.select(svgNode).call(styleNode);
-    });
-    // update materialize select forms
-    $("select").material_select();
-    // category edit button
-    selection.select(".btn-edit-cat")
-        .on("click", function () {
-            $("#modal-category").modal("open");
-            updateCatSettings(function () {
-                bindCategory(selection, node, svgNode, type);
-            });
-        })
-}
-
 // update category settings modal content
 function updateCatSettings(updateEditPane) {
     if (!("sort" in window)) {
