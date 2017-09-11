@@ -469,18 +469,6 @@ var ComponentTree = function () {
             var className = type + "Node";
             var circleRadius = { "comp": 4, "func": 3, "param": 3 };
             var circleColor = { "comp": "teal", "func": "red", "param": "orange" };
-            var _clickCompNode = function (d, i, a) {
-                trees.editor.setNode(d);
-                trees.editor.generatePane();
-            }
-            var _clickFuncNode = function (d) {
-                trees.editor.setNode(d);
-                trees.editor.generatePane();
-            }
-            var _clickParamNode = function (node, i, a) {
-                return clickParamNode(node, i, a, root);
-            }
-            var clickFunc = { "comp": _clickCompNode, "func": _clickFuncNode, "param": _clickParamNode };
             var node = d3.select("#compTreeSVG .treeContainer .node")
                 .selectAll("." + className)
                 .data(nodeArr);
@@ -498,7 +486,10 @@ var ComponentTree = function () {
                     return "translate(" + d.y + "," + d.x + ")";
                 });
             updatedNode.select("text").html(function (d) { return tspanStringify(d.label) });
-            updatedNode.on("click", clickFunc[type]);
+            updatedNode.on("click", function (d) {
+                trees.editor.setNode(d);
+                trees.editor.generatePane();
+            });
             updatedNode.call(styleNode);
         }
         drawNode(model.root.descendants(), "comp", model.root);
@@ -841,6 +832,7 @@ var Funcburst = function () {
         updatedFpLabel.on("click", function (d) {
             _svg.selectAll(".selected-fill").remove();
             var bbox = d3.select(this).node().getBBox();
+            console.log(this);
             d3.select(this).select(".selected").append("rect")
                 .attr("x", bbox.x).attr("y", bbox.y)
                 .attr("width", bbox.width).attr("height", bbox.height)
@@ -942,8 +934,7 @@ var NodeEditor = function (controller) {
             } else {
                 self.node.data.cat = "";
             }
-            self.controller.reload();
-            self.regenerate();
+            self.controller.reload(selectJptr = getJptr(self.node));
         });
         // update materialize select forms
         $("select").material_select();
@@ -1081,7 +1072,7 @@ var NodeEditor = function (controller) {
                 self.controller.reload(selectJptr = getJptr(self.node));
             })
 
-        d3.select(".btn-add-comp-parent")
+        collection.select(".btn-add-comp-parent")
             .on("click", function () {
                 $("#link-nav-change-comp-parent").sideNav("show");
             })
@@ -1316,6 +1307,13 @@ var NodeEditor = function (controller) {
         this.addFixChildrenCollection();
         this.addNoteCollection();
     }
+    this.generateParamEditPane = function () {
+        this.addNameCollection();
+        this.addCategoryCollection();
+        this.addBelongCollection();
+        this.addFPParentCollection();
+        this.addNoteCollection();
+    }
     this.generatePane = function () {
         d3.select("#slide-out").selectAll("div")
             .style("display", "none");
@@ -1323,6 +1321,7 @@ var NodeEditor = function (controller) {
         this.d3root.selectAll(".collection").remove();
         if (this.type == "comp") { this.generateCompEditPane(); }
         if (this.type == "func") { this.generateFuncEditPane(); }
+        if (this.type == "param") { this.generateParamEditPane(); }
     }
     this.regenerate = function () {
         var _jptr = getJptr(this.node);
@@ -1532,134 +1531,6 @@ function tspanStringify(strArr) {
             + str + '</tspan>';
     });
     return _html;
-}
-
-// param-nodeクリック時の挙動
-function clickParamNode(node, i, a) {
-    console.log(node);
-
-    setEditPane("param")
-    highlightNode(node);
-
-    // bind definition of parameter
-    d3.select("#param-edit .node-name form")
-        .call(bindName, node);
-    // bind category
-    d3.select("#param-edit .category")
-        .call(bindCategory, node, a[i], "param");
-    // bind comp-node which parameter is constrained by (icb)
-    var icb = d3.select("#param-icb")
-        .selectAll("li.collection-item")
-        .data(function () { return node.icb ? [node.icb] : []; });
-    icb.exit().remove();
-    var enteredIcb = icb.enter()
-        .append("li");
-    var updatedIcb = enteredIcb.merge(icb)
-        .attr("class", "collection-item")
-        .text(function (d) { return d.data.name; });
-
-    // bind parent
-    d3.select("#param-parents .add")
-        .remove();  // 以前に作成したaddボタンを削除
-    var prnt = d3.select("#param-parents")
-        .selectAll("li.collection-item")
-        .data(function () { return node.parents ? node.parents : []; });
-    prnt.exit().remove();  // 減った要素を削除
-    var enteredPrnt = prnt.enter()  // 増えた要素を追加
-        .append("li")
-    var updatedPrnt = enteredPrnt.merge(prnt)  // 内容更新
-        .attr("class", "collection-item drag")
-        .text(function (d) { return d === null ? "no parent" : d.data.name; });
-    // add remove button to each parent
-    updatedPrnt.call(addRemoveIcon);
-    // insert add-parent button
-    var addParentBtn = d3.select("#param-parents")
-        .append("li").attr("class", "collection-item add")
-        .append("button").attr("class", "waves-effect waves-light btn");
-    addParentBtn.text("Add")
-        .append("i").attr("class", "material-icons left")
-        .text("add");
-    // behavior when add-parent button is clicked 
-    addParentBtn.on("click", function () {
-        // 選択されているparamとicb関係にあるcomp-nodeのancestorにあるfuncを探索
-        var addiable = node.icb.ancestors()
-            .reduce(function (pre, _node) {
-                return pre.concat(_node.func);
-            }, Array())
-            .filter(function (elm) {
-                if (elm == node || node.parents.indexOf(elm) != -1) {
-                    return false;
-                }
-                return true;
-            })
-        var prnt = d3.select("#add-param-parent")
-            .selectAll("a.collection-item")
-            .data(addiable);
-        prnt.exit().remove();
-        var enteredPrnt = prnt.enter()
-            .append("a")
-            .attr("href", "#!")
-            .attr("class", "collection-item");
-        enteredPrnt.append("div")
-            .attr("class", "side-prnt-name");
-        enteredPrnt.append("div")
-            .attr("class", "side-prnt-isb");
-        var margedPrnt = enteredPrnt.merge(prnt);
-        // show addiable func-node
-        margedPrnt.select(".side-prnt-name")
-            .text(function (d) {
-                return d.data.name;
-            })
-        margedPrnt.select(".side-prnt-isb")
-            .text(function (d) {
-                return d.isb.data.name;
-            });
-        // click時の挙動
-        margedPrnt.on("click", function (prnt) {
-            var prntPtr = getJptr(prnt.isb,
-                "/func/" + prnt.isb.func.indexOf(prnt));
-            node.data.parents.push(prntPtr);
-            // データ再構築
-            $("#side-func-parent").sideNav("hide");
-            var thisPtr = getJptr(node.icb,
-                "/param/" + node.icb.param.indexOf(node));
-            trees.reload();
-            // clickParamNode(parseJptr(root, thisPtr), i, a);
-        });
-        $("#side-add-param-parent").sideNav("show");
-    });
-    // Sortable List Option for parents of parameter
-    if ("paramParentsSort" in window) { paramParentsSort.destroy(); }
-    var el = document.getElementById("param-parents");
-    paramParentsSort = Sortable.create(el, {
-        animation: 100,
-        draggable: ".collection-item.drag",
-        filter: ".js-remove",
-        onFilter: function (evt) {
-            var item = evt.item;
-            var ctrl = evt.target;
-            if (Sortable.utils.is(ctrl, ".js-remove")) {  // Click on remove button
-                item.parentNode.removeChild(item); // remove sortable item
-                // 子要素の削除
-                node.data.parents.splice(evt.oldIndex - 1, 1);
-                trees.reload();
-            }
-        },
-        // drag後の処理
-        onUpdate: function (evt) {
-            var _old = evt.oldIndex;
-            var _new = evt.newIndex;
-            var _oldPrnt = node.data.parents[_old - 1];
-            node.data.parents[_old - 1] = node.data.parents[_new - 1];
-            node.data.parents[_new - 1] = _oldPrnt;
-            // データ再構築
-            trees.reload();
-        }
-    });
-
-    // bind note
-    d3.select("#param-edit").select(".note textarea")
-        .call(bindNote, node, a[i]);
 }
 
 function getFMNodeHeight() {
