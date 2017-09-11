@@ -831,7 +831,8 @@ var Funcburst = function () {
                     return getCatColor(d.data.cat, type)
                 }
             })
-            .attr("stroke-width", "0.7px")
+            .attr("paint-order", "stroke")
+            .attr("stroke-width", "1.0px")
             .text(function (d) {
                 return d.data.name;
             });
@@ -2267,7 +2268,8 @@ function styleNode(selection) {
         .attr("stroke", function (d) {
             return getCatColor(d.data.cat, type);
         })
-        .attr("stroke-width", "0.7px")
+        .attr("paint-order", "stroke")
+        .attr("stroke-width", "1.0px")
         .attr("dominant-baseline", baseline[type]);
 
     // add tooltip displaying note
