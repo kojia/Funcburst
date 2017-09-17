@@ -1489,7 +1489,12 @@ $("#create-new").click(function () {
 });
 // open file
 $(document).ready(function () {
+    $("#readjson").click(function(){
+        console.log("click");
+        $(this).val("");
+    })
     $("#readjson").change(function (e) {
+        console.log(e.target.files);
         var file = e.target.files[0];
         // FileReader.onloadイベントに
         // ファイル選択時に行いたい処理を書く
