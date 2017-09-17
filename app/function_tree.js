@@ -402,6 +402,44 @@ var ITree = function (selector) {
             this.svg.style("display", "none");
         }
     };
+
+    p.drawSvgOnNewWindow = function () {
+        var cloneSvg = $(this.svg.node()).clone(false);
+        cloneSvg.find(".treeContainer")
+            .attr("transform", null);
+        var nw = window.open();
+
+        function svgLoad() {
+            if (nw && nw.document && nw.document.body) {
+                var div = nw.document.createElement("div");
+                div.innerHTML = cloneSvg.html();
+                nw.document.body.appendChild(div);
+                var bbox = nw.document.getElementsByClassName("treeContainer")[0].getBBox();
+                nw.document.body.removeChild(div);
+
+                cloneSvg.children("svg")
+                    .attr({
+                        "xmlns": "http://www.w3.org/2000/svg",
+                        "xmlns:xlink": "http://www.w3.org/1999/xlink",
+                        // "width": bbox.width,
+                        // "height": bbox.height
+                    });
+                cloneSvg.children("svg")[0].setAttribute(
+                    "viewBox", bbox.x + ", " + bbox.y + ", "
+                    + bbox.width + ", " + bbox.height
+                );
+                var src = "data:image/svg+xml;charset=utf-8,";
+                src += encodeURIComponent(cloneSvg.html());
+                var img = document.createElement("img");
+                img.setAttribute("src", src)
+                nw.document.body.appendChild(img);
+            }
+            else {
+                window.setTimeout(function () { svgLoad(); }, 100);
+            }
+        }
+        svgLoad();
+    }
 }())
 
 // View Object for Component Tree
@@ -1353,7 +1391,7 @@ var TreeController = function (data) {
         this.model.makeFMTreeModel();
         this.model.makeFuncburstModel();
     }
-    // Tree viewの再描画
+    // Tree viewの描画
     p.drawSVG = function (fit, selectJptr) {
         this.trees
             .filter(function (tree) {
@@ -1362,6 +1400,16 @@ var TreeController = function (data) {
             .forEach(function (tree) {
                 tree.drawSVG(this.model, selectJptr);
                 tree.fit();
+            }, this)
+    }
+    // Tree viewを新しいウィンドウに描画
+    p.drawSvgOnNewWindow = function () {
+        this.trees
+            .filter(function (tree) {
+                return tree.isActiveSVG();
+            })
+            .forEach(function (tree) {
+                tree.drawSvgOnNewWindow(this.model);
             }, this)
     }
 
@@ -1474,18 +1522,9 @@ $("#dataURI").click(function () {
     var outJson = JSON.stringify(writeData(), undefined, 2);
     window.open("data:;charset=utf-8," + encodeURIComponent(outJson));
 });
-// open svg in another window
+// open svg in new window
 $("#show-svg").click(function () {
-    var svg = $("#compTreeSVG");
-    var showsvg = $("<svg>");
-    showsvg.attr({
-        "xmlns": "http://www.w3.org/2000/svg",
-        "width": $("#compTreeSVG").width() * 1.1,
-        "height": $("#compTreeSVG").height() * 1.1
-    });
-    showsvg.html(svg.html());
-    window.open("data:image/svg+xml;charset=utf-8,"
-        + encodeURIComponent($("<div>").append(showsvg).html()));
+    trees.drawSvgOnNewWindow();
 });
 // reload action when reload button is clicked
 $("#reload").click(function () {
