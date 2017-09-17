@@ -1514,7 +1514,7 @@ $(document).ready(function () {
 // save file
 $("#download").click(function () {
     var filename = $(".file-path.validate").val() || "funcburstdata.json";
-    var outJson = JSON.stringify(writeData(), undefined, 2);
+    var outJson = trees.model.stringifyJson();
     var blob = new Blob([outJson], { "type": "text/plain" });
     if (window.navigator.msSaveBlob) {
         window.navigator.msSaveBlob(blob, filname);
@@ -1529,8 +1529,18 @@ $("#download").click(function () {
     }
 });
 $("#dataURI").click(function () {
-    var outJson = JSON.stringify(writeData(), undefined, 2);
-    window.open("data:;charset=utf-8," + encodeURIComponent(outJson));
+    var nw = window.open();
+    var load = function() {
+        if (nw && nw.document && nw.document.body) {
+            var pre = nw.document.createElement("pre");
+            pre.innerHTML = trees.model.stringifyJson();
+            nw.document.body.appendChild(pre);
+        }
+        else {
+            window.setTimeout(function () { svgLoad(); }, 100);
+        }
+    }
+    load();
 });
 // open svg in new window
 $("#show-svg").click(function () {
