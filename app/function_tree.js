@@ -2183,22 +2183,6 @@ function getCatColor(catObj, catStr, type) {
     }
 }
 
-function bindNote(selection, node, svgNode) {
-    var _note = "";
-    if (node.data.note) {
-        _note = node.data.note;
-    } else {
-        node.data.note = "";
-    }
-    selection.property("value", _note);
-    $(selection.node()).trigger("autoresize");
-    // save data if editted
-    selection.on("change", function () {
-        node.data.note = selection.property("value");
-        d3.select(svgNode).call(styleNode);
-    })
-}
-
 // add suffix remove icon for collection-item
 // selection: d3-selector for "collection-item" classed <li> element
 function addRemoveIcon(selection) {
