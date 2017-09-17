@@ -17,12 +17,32 @@ function writeData() {
 readData();
 
 // Tree Model Object
-function TreeModel(data) {
-    this.data = data;
+function TreeModel() {
+
+    this.data = makeNewComp("Root");
+    this.category = Object();
     this.root = Object();
     this.fmroot = Object();
 
     p = TreeModel.prototype;
+
+    // set json data
+    p.setData = function (json = undefined) {
+        if (json) {
+            this.data = json["data"];
+            this.category = json["category"];
+        }
+        else {
+            this.data = makeNewComp("Root");
+            this.category = Object();
+        }
+    }
+
+    // stringify json
+    p.stringifyJson = function () {
+        var json = { "data": this.data, "category": this.category };
+        return JSON.stringify(json, undefined, 2);
+    }
 
     // hierararchlize Component Tree Model and set layout
     p.makeCompTreeModel = function () {
@@ -1369,8 +1389,8 @@ var NodeEditor = function (controller) {
 }
 
 // tree instances controller
-var TreeController = function (data) {
-    this.model = new TreeModel(data);
+var TreeController = function () {
+    this.model = new TreeModel();
     this.editor = new NodeEditor(this);
 
     // view
@@ -1381,10 +1401,7 @@ var TreeController = function (data) {
 
     // prototype
     p = TreeController.prototype;
-    // set data
-    p.setData = function (data) {
-        this.model.data = data;
-    }
+
     // モデル再計算
     p.computeModel = function () {
         this.model.makeCompTreeModel();
@@ -1421,8 +1438,7 @@ var TreeController = function (data) {
     p.notice = function () {
     };
 };
-var trees = new TreeController(dataset);
-
+var trees = new TreeController();
 
 // get URL parameter and read initial data
 if (1 < document.location.search.length) {
@@ -1438,15 +1454,10 @@ if (1 < document.location.search.length) {
     if (paramMap["data"]) {
         d3.json(paramMap["data"], function (error, data) {
             if (!error) {
-                readData(data);
+                trees.model.setData(data);
             }
-            trees.setData(dataset);
         });
-    } else {
-        trees.setData(dataset);
     }
-} else {
-    trees.setData(dataset);
 }
 
 // initialize materialize plugin and SVG window-size
@@ -1470,8 +1481,8 @@ $(document).ready(function () {
 // crate new file
 $("#create-new").click(function () {
     var _createNew = function () {
-        dataset = makeNewComp("Root");
-        trees.setData(dataset);
+        trees.model.setData();
+        trees.reload(true);
         highlightNode();
     }
     confirmDelNode("", _createNew, "Are you sure you want to create new tree? Unsaved data will be lost.");
@@ -1487,8 +1498,7 @@ $(document).ready(function () {
             try {
                 // JSONに変換
                 _data = $.parseJSON(reader.result);
-                dataset = _data.data;
-                trees.setData(dataset);
+                trees.model.setData(_data);
                 trees.reload(fit = true);
             }
             catch (e) {
@@ -1503,7 +1513,7 @@ $(document).ready(function () {
 }, false);
 // save file
 $("#download").click(function () {
-    var filename = $(".file-path.validate").val() || "function_tree.json";
+    var filename = $(".file-path.validate").val() || "funcburstdata.json";
     var outJson = JSON.stringify(writeData(), undefined, 2);
     var blob = new Blob([outJson], { "type": "text/plain" });
     if (window.navigator.msSaveBlob) {
