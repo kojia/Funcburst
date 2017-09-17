@@ -2199,17 +2199,6 @@ function bindNote(selection, node, svgNode) {
     })
 }
 
-// selection: d3-selector for <form>
-function bindName(selection, node) {
-    $(selection.node())[0].reset();
-    selection.select("input")
-        .attr("value", node.data.name)
-        .on("change", function () {
-            node.data.name = d3.event.target.value;
-            trees.reload();
-        });
-}
-
 // add suffix remove icon for collection-item
 // selection: d3-selector for "collection-item" classed <li> element
 function addRemoveIcon(selection) {
