@@ -1,21 +1,5 @@
 // @licence MIT
 
-// initialize dataset and category
-var dataset = Object();
-var category = Object();
-function readData(data = undefined) {
-    if (data) {
-        if (data.data) dataset = data.data;
-        if (data.category) category = data.category;
-    } else {
-        dataset = makeNewComp("Root");
-    }
-}
-function writeData() {
-    return { "data": dataset, "category": category };
-}
-readData();
-
 // Tree Model Object
 function TreeModel() {
 
@@ -685,7 +669,7 @@ var Funcburst = function () {
             .attr("d", cellArc)
             .style("fill", function (d) {
                 if (d.data.cat) {
-                    var colname = getCatColor(d.data.cat, "comp");
+                    var colname = getCatColor(model.category, d.data.cat, "comp");
                     if (document.getElementById("dotPtn" + colname.slice(1)) === null) {
                         _svg.select("defs")
                             .append("pattern")
@@ -877,7 +861,7 @@ var Funcburst = function () {
                     var type = "param";
                 }
                 if (d.data.cat) {
-                    return getCatColor(d.data.cat, type)
+                    return getCatColor(model.category, d.data.cat, type)
                 }
             })
             .attr("paint-order", "stroke")
@@ -961,6 +945,7 @@ var NodeEditor = function (controller) {
     }
     this.addCategoryCollection = function () {
         var self = this;
+        var category = self.controller.model.category
         var categoryList = ["uncategolized"];
         if (category[this.type]) {
             categoryList = categoryList.concat(category[this.type]);
@@ -1000,7 +985,7 @@ var NodeEditor = function (controller) {
         collection.select(".btn-edit-cat")
             .on("click", function () {
                 $("#modal-category").modal("open");
-                updateCatSettings(function () {
+                updateCatSettings(category, function () {
                     self.regenerate();
                 });
             })
@@ -1996,7 +1981,7 @@ function separate(getSub, a, b) {
 };
 
 // update category settings modal content
-function updateCatSettings(updateEditPane) {
+function updateCatSettings(catObj, updateEditPane) {
     if (!("sort" in window)) {
         sort = {}
     };
@@ -2004,13 +1989,13 @@ function updateCatSettings(updateEditPane) {
         // reset add category form
         $("#" + id + " .add_cat form")[0].reset();
 
-        if (!category[type]) {
-            category[type] = [];
+        if (!catObj[type]) {
+            catObj[type] = [];
         }
 
         var cat = d3.select("#" + id).select("ul")
             .selectAll("li.collection-item")
-            .data(category[type]);
+            .data(catObj[type]);
         cat.exit().remove();
         var enteredCat = cat.enter()
             .append("li");
@@ -2027,7 +2012,7 @@ function updateCatSettings(updateEditPane) {
             .attr("class", "collection-item drag");
         // category color mark
         updatedCat.select("i")
-            .style("color", function (d) { return getCatColor(d, type) })
+            .style("color", function (d) { return getCatColor(catObj, d, type) })
             .text("crop_square");
         // category name
         updatedCat.select("input")
@@ -2040,7 +2025,7 @@ function updateCatSettings(updateEditPane) {
                 updateEditPane();
             });
         function swapCategory(type, oldStr, newStr) {
-            category[type][category[type].indexOf(oldStr)] = newStr;
+            catObj[type][catObj[type].indexOf(oldStr)] = newStr;
             var des = {
                 "comp": root.descendants(),
                 "func": root.funcDescendants(),
@@ -2058,9 +2043,9 @@ function updateCatSettings(updateEditPane) {
         d3.select("#" + id + " .add_cat input")
             .attr("pattern", function () {
                 var re;
-                if (category[type].length != 0) {
+                if (catObj[type].length != 0) {
                     re = "^(?!";
-                    re += category[type].reduce(function (a, b) {
+                    re += catObj[type].reduce(function (a, b) {
                         if (a === "") {
                             return b;
                         }
@@ -2080,7 +2065,7 @@ function updateCatSettings(updateEditPane) {
             .on("submit", function () {
                 var addInput = d3.select("#" + id + " .add_cat input");
                 var newCat = addInput.property("value");
-                category[type].push(newCat);
+                catObj[type].push(newCat);
                 _update(id, type);
                 updateEditPane();
             })
@@ -2093,9 +2078,9 @@ function updateCatSettings(updateEditPane) {
             animation: 100,
             draggable: ".collection-item.drag",
             onUpdate: function (evt) {  // behavior on drag
-                var _ = category[type][evt.oldIndex - 1];
-                category[type][evt.oldIndex - 1] = category[type][evt.newIndex - 1];
-                category[type][evt.newIndex - 1] = _;
+                var _ = catObj[type][evt.oldIndex - 1];
+                catObj[type][evt.oldIndex - 1] = catObj[type][evt.newIndex - 1];
+                catObj[type][evt.newIndex - 1] = _;
                 _update(id, type);
                 updateEditPane();
                 d3.select("#comp-tree").selectAll("." + type + "Node")
@@ -2109,13 +2094,13 @@ function updateCatSettings(updateEditPane) {
                         var item = evt.item;
                         item.parentNode.removeChild(item); // remove sortable item
                         // datasetから削除
-                        category[type].splice(evt.oldIndex - 1, 1);
+                        catObj[type].splice(evt.oldIndex - 1, 1);
                         _update(id, type);
                         updateEditPane();
                         d3.select("#comp-tree").selectAll("." + type + "Node")
                             .call(styleNode);
                     }
-                    confirmDelNode(category[type][evt.oldIndex - 1], _del);
+                    confirmDelNode(catObj[type][evt.oldIndex - 1], _del);
                 }
             }
         });
@@ -2155,7 +2140,7 @@ function styleNode(selection) {
     selection.select("text")
         .attr("fill", fontColor[type])
         .attr("stroke", function (d) {
-            return getCatColor(d.data.cat, type);
+            return getCatColor(trees.model.category, d.data.cat, type);
         })
         .attr("paint-order", "stroke")
         .attr("stroke-width", "1.0px")
@@ -2177,11 +2162,11 @@ function styleNode(selection) {
 
 // get category color
 // catStr: category name string, type: comp/func/paraam
-function getCatColor(catStr, type) {
-    if (!category[type]) {
-        category[type] = [];
+function getCatColor(catObj, catStr, type) {
+    if (!catObj[type]) {
+        catObj[type] = [];
     }
-    var index = category[type].indexOf(catStr);
+    var index = catObj[type].indexOf(catStr);
     if (index == -1) {
         return undefined;
     }
