@@ -549,11 +549,9 @@ var FMTree = function () {
 
     // geranerate SVG field
     this.drawSVG = function (model) {
-        // svg initialize
-        d3.select("#FMTreeSVG").select("svg").remove();
 
         // ノード間を線でつなぐ
-        var link = d3.select("#FMTreeSVG .treeContainer").selectAll(".link")
+        var link = this.svg.select(".treeContainer").selectAll(".link")
             .data(model.fmroot.descendants().slice(1));
         link.exit().remove();
         var enteredLink = link.enter()
@@ -571,9 +569,9 @@ var FMTree = function () {
                     + " " + d.parent.y + "," + d.parent.x;
             });
 
-        // ノード作成
-        var node = d3.select("#FMTreeSVG .treeContainer")
-            .selectAll(".node")
+        // ノード作成(component and function)
+        var node = this.svg.select(".treeContainer")
+            .selectAll("g")
             .data(model.fmroot.descendants());
         node.exit().remove();
         var enteredNode = node.enter()
@@ -582,7 +580,14 @@ var FMTree = function () {
         enteredNode.append("text")
             .attr("font-size", getFMNodeHeight() + "px");
         var updatedNode = enteredNode.merge(node);
-        updatedNode.attr("class", "node")
+        updatedNode
+            .attr("class", function (d) {
+                if (d.data.fmcat == "func") {
+                    return "funcNode";
+                } else {
+                    return "compNode";
+                }
+            })
             .attr("transform", function (d) {
                 return "translate(" + d.y + "," + d.x + ")";
             });
@@ -597,19 +602,20 @@ var FMTree = function () {
             });
         updatedNode.select("text")
             .html(function (d) { return tspanStringify(d.label); });
+        this.svg.selectAll(".compNode").call(styleNode);
+        this.svg.selectAll(".funcNode").call(styleNode);
         // draw parameter node 
         var paramData = model.fmroot.descendants()
             .filter(function (d) { return d.data.fmcat === "means" })
             .reduce(function (a, b) { return a.concat(b.param); }, Array());
-        var param = d3.select("#FMTreeSVG .treeContainer")
+        var param = this.svg.select(".treeContainer")
             .selectAll(".paramNode")
             .data(paramData);
         param.exit().remove();
         var enteredParam = param.enter()
             .append("g");
         enteredParam.append("circle");
-        enteredParam.append("text")
-            .attr("font-size", getFMNodeHeight() * 0.8 + "px");
+        enteredParam.append("text");
         var updatedParam = enteredParam.merge(param);
         updatedParam.attr("class", "paramNode")
             .attr("transform", function (d) {
@@ -620,6 +626,7 @@ var FMTree = function () {
             .attr("fill", "orange");
         updatedParam.select("text")
             .html(function (d) { return tspanStringify(d.label); });
+        updatedParam.call(styleNode);
     }
 }
 // inherit
@@ -1474,7 +1481,7 @@ $("#create-new").click(function () {
 });
 // open file
 $(document).ready(function () {
-    $("#readjson").click(function(){
+    $("#readjson").click(function () {
         $(this).val("");
     })
     $("#readjson").change(function (e) {
@@ -1518,7 +1525,7 @@ $("#download").click(function () {
 });
 $("#dataURI").click(function () {
     var nw = window.open();
-    var load = function() {
+    var load = function () {
         if (nw && nw.document && nw.document.body) {
             var pre = nw.document.createElement("pre");
             pre.innerHTML = trees.model.stringifyJson();
@@ -2117,30 +2124,19 @@ function styleNode(selection) {
     if (selection._groups[0].length === 0) {
         return;
     }
-    var nodeType = selection.attr("class")
-        .split(" ").filter(function (e) {
-            return /.*Node$/.test(e);
-        });;
-    var type = nodeType[0].substr(0, nodeType[0].length - 4);
-    var fontSize = {
-        "comp": getNodeHeight() + "px",
-        "func": getNodeHeight() * 0.9 + "px",
-        "param": getNodeHeight() * 0.9 + "px"
-    }
-    var fontColor = {
-        "comp": "black",
-        "func": "dimgray",
-        "param": "dimgray"
-    }
+    var type = selection.attr("class").match(/(.*)Node/)[1];
     var baseline = {
         "comp": "auto",
         "func": "central",
         "param": "central"
     }
     selection.select("text")
-        .attr("fill", fontColor[type])
         .attr("stroke", function (d) {
-            return getCatColor(trees.model.category, d.data.cat, type);
+            if (d.cdata) {
+                return getCatColor(trees.model.category, d.cdata.cat, type);
+            } else {
+                return getCatColor(trees.model.category, d.data.cat, type);
+            }
         })
         .attr("paint-order", "stroke")
         .attr("stroke-width", "1.0px")
@@ -2148,8 +2144,9 @@ function styleNode(selection) {
 
     // add tooltip displaying note
     selection.classed("note-tooltip", function (d, i, a) {
-        if (d.data.note) {
-            $(a[i]).tooltip({ tooltip: d.data.note, delay: 50, position: "left" });
+        var _data = d.cdata ? d.cdata : d.data;
+        if (_data.note) {
+            $(a[i]).tooltip({ tooltip: _data.note, delay: 50, position: "left" });
             return true;
         } else {
             if (d3.select(this).classed("note-tooltip")) {
