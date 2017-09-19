@@ -864,7 +864,6 @@ var Funcburst = function () {
 
         // fill element of selected node
         updatedFpLabel.on("click", function (d) {
-            console.log(this);
             d3.select(this).call(fillSelectedNode, _svg);
             trees.editor.setNode(d);
             trees.editor.generatePane();
