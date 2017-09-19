@@ -2149,7 +2149,8 @@ function styleNode(selection) {
         })
         .attr("paint-order", "stroke")
         .attr("stroke-width", "1.0px")
-        .attr("dominant-baseline", baseline[type]);
+        .attr("dominant-baseline", baseline[type])
+        .attr("dx", "4");
 
     selection.select("circle")
         .attr("r", circleRadius[type])
