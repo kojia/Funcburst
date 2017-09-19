@@ -864,15 +864,8 @@ var Funcburst = function () {
 
         // fill element of selected node
         updatedFpLabel.on("click", function (d) {
-            _svg.selectAll(".selected-fill").remove();
-            var bbox = d3.select(this).node().getBBox();
             console.log(this);
-            d3.select(this).select(".selected").append("rect")
-                .attr("x", bbox.x).attr("y", bbox.y)
-                .attr("width", bbox.width).attr("height", bbox.height)
-                .attr("fill", "#64ffda")
-                .attr("fill-opacity", 0.5)
-                .attr("class", "selected-fill");
+            d3.select(this).call(fillSelectedNode, _svg);
             trees.editor.setNode(d);
             trees.editor.generatePane();
         });
@@ -2201,4 +2194,22 @@ function addRemoveIcon(selection) {
         .append("i")
         .attr("class", "js-remove material-icons")
         .text("remove_circle_outline");
+}
+
+/**
+ * fill background color with pale blue for the selected node
+ * and reset background fill for unselected nodes
+ * use this function via d3.selection.call
+ * @param {d3.selection} selection selected node
+ * @param {d3.selection} svgSelection <svg> selection
+ */
+function fillSelectedNode(selection, svgSelection) {
+    svgSelection.selectAll(".selected-fill").remove();
+    var bbox = selection.node().getBBox();
+    selection.select(".selected").append("rect")
+        .attr("x", bbox.x).attr("y", bbox.y)
+        .attr("width", bbox.width).attr("height", bbox.height)
+        .attr("fill", "#64ffda")
+        .attr("fill-opacity", 0.5)
+        .attr("class", "selected-fill");
 }
