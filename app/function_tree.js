@@ -509,17 +509,13 @@ var ComponentTree = function () {
         // ノード作成
         var drawNode = function (nodeArr, type, root) {
             var className = type + "Node";
-            var circleRadius = { "comp": 4, "func": 3, "param": 3 };
-            var circleColor = { "comp": "teal", "func": "red", "param": "orange" };
             var node = d3.select("#compTreeSVG .treeContainer .node")
                 .selectAll("." + className)
                 .data(nodeArr);
             node.exit().remove();
             var enteredNode = node.enter()
                 .append("g").attr("class", className);
-            enteredNode.append("circle")
-                .attr("r", circleRadius[type])
-                .attr("fill", circleColor[type]);
+            enteredNode.append("circle");
             enteredNode.append("text");
             var updatedNode = enteredNode.merge(node);
             // ノードに円とテキストを表示
@@ -591,15 +587,7 @@ var FMTree = function () {
             .attr("transform", function (d) {
                 return "translate(" + d.y + "," + d.x + ")";
             });
-        updatedNode.select("circle")
-            .attr("r", 4)
-            .attr("fill", function (d) {
-                if (d.data.fmcat == "func") {
-                    return "red";
-                } else {
-                    return "teal";
-                }
-            });
+        updatedNode.select("circle");
         updatedNode.select("text")
             .html(function (d) { return tspanStringify(d.label); });
         this.svg.selectAll(".compNode").call(styleNode);
@@ -621,9 +609,6 @@ var FMTree = function () {
             .attr("transform", function (d) {
                 return "translate(" + d.y + "," + d.x + ")";
             });
-        updatedParam.select("circle")
-            .attr("r", 3)
-            .attr("fill", "orange");
         updatedParam.select("text")
             .html(function (d) { return tspanStringify(d.label); });
         updatedParam.call(styleNode);
@@ -2124,12 +2109,36 @@ function styleNode(selection) {
     if (selection._groups[0].length === 0) {
         return;
     }
+    var treeType = "";
+    var treeSVGId = selection.node().ownerSVGElement.getAttribute("id");
+    if (treeSVGId == "compTreeSVG") {
+        treeType = "compTree";
+    } else if (treeSVGId == "FMTreeSVG") {
+        treeType = "FMTree";
+    }
+
     var type = selection.attr("class").match(/(.*)Node/)[1];
+
     var baseline = {
         "comp": "auto",
         "func": "central",
         "param": "central"
     }
+    if (treeType == "FMTree") {
+        baseline["func"] = "auto";
+    }
+
+    var circleCol = {
+        "comp": "teal",
+        "func": "red",
+        "param": "orange"
+    }
+
+    var circleRadius = { "comp": 4, "func": 3, "param": 3 };
+    if (treeType == "FMTree") {
+        circleRadius = { "comp": 4, "func": 4, "param": 3 };
+    }
+
     selection.select("text")
         .attr("stroke", function (d) {
             if (d.cdata) {
@@ -2142,6 +2151,10 @@ function styleNode(selection) {
         .attr("stroke-width", "1.0px")
         .attr("dominant-baseline", baseline[type]);
 
+    selection.select("circle")
+        .attr("r", circleRadius[type])
+        .attr("fill", circleCol[type]);
+        
     // add tooltip displaying note
     selection.classed("note-tooltip", function (d, i, a) {
         var _data = d.cdata ? d.cdata : d.data;
