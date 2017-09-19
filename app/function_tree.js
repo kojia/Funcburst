@@ -451,7 +451,8 @@ var ComponentTree = function () {
     ITree.call(this, "#comp-tree");
 
     // geranerate SVG field
-    this.drawSVG = function (model) {
+    this.drawSVG = function (model, selectJptr = undefined) {
+        var self = this;
         // func-nodeをSVG描画
         // func-nodeをつなぐ線の色を設定
         var xArray = model.root.funcDescendants()
@@ -515,6 +516,7 @@ var ComponentTree = function () {
             node.exit().remove();
             var enteredNode = node.enter()
                 .append("g").attr("class", className);
+            enteredNode.append("g").attr("class", "selected");
             enteredNode.append("circle");
             enteredNode.append("text");
             var updatedNode = enteredNode.merge(node);
@@ -525,10 +527,16 @@ var ComponentTree = function () {
                 });
             updatedNode.select("text").html(function (d) { return tspanStringify(d.label) });
             updatedNode.on("click", function (d) {
+                d3.select(this).call(fillSelectedNode, self.svg);
                 trees.editor.setNode(d);
                 trees.editor.generatePane();
             });
             updatedNode.call(styleNode);
+            updatedNode
+                .filter(function (d) {
+                    return getJptr(d) == selectJptr;
+                })
+                .dispatch("click");
         }
         drawNode(model.root.descendants(), "comp", model.root);
         drawNode(model.root.funcDescendants(), "func", model.root);
@@ -2147,7 +2155,7 @@ function styleNode(selection) {
     selection.select("circle")
         .attr("r", circleRadius[type])
         .attr("fill", circleCol[type]);
-        
+
     // add tooltip displaying note
     selection.classed("note-tooltip", function (d, i, a) {
         var _data = d.cdata ? d.cdata : d.data;
