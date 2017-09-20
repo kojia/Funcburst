@@ -538,6 +538,9 @@ var ComponentTree = function () {
                 })
                 .dispatch("click");
         }
+        // clear select
+        self.svg.selectAll(".selected-fill").remove();
+        // draw node
         drawNode(model.root.descendants(), "comp", model.root);
         drawNode(model.root.funcDescendants(), "func", model.root);
         drawNode(model.root.paramDescendants(), "param", model.root);
