@@ -58,6 +58,9 @@ main {
 	border-style: none none solid;
 	border-bottom-width: 1px;
 }
+#top-nav input {
+	height: inherit;
+}
 #tree-tab, #tree-tab .tab {
 	height: 2rem;
 	line-height: 2rem;
