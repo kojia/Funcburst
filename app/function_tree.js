@@ -1538,24 +1538,22 @@ $("#dataURI").click(function () {
 $("#show-svg").click(function () {
     trees.drawSvgOnNewWindow();
 });
-// reload action when reload button is clicked
+// reload when reload button is clicked
 $("#reload").click(function () {
     setEditPane();
     trees.reload(fit = true);
 });
-// reload action when tab transition
+// tabObserver action fired on tab transition
 var tabObserver = new MutationObserver(function (rec, obs) {
     setEditPane();
     trees.reload(fit = true);
 });
-// 各ツリーすべてを監視できるようにする必要あり
-tabObserver.observe($("main div.container").get(0), {
-    attributes: true
-})
-tabObserver.observe($("main div.container").get(1), {
-    attributes: true
-})
-
+// regist each tab to tabObserver
+for (var i = 0; i < $("main div.container").length; i++) {
+    tabObserver.observe($("main div.container").get(i), {
+        attributes: true
+    })
+}
 
 function getNodeHeight() {
     return 15;
