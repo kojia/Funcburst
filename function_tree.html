@@ -26,7 +26,13 @@
 	<header>
 		<nav class="nav-extended teal darken-1" id="navbar">
 			<div class="nav-wrapper">
+				<a href="#" data-activates="slide-out" class="button-collapse btn-floating teal accent-4">
+					<i class="material-icons">edit</i>
+				</a>
 				<ul id="top-nav">
+
+
+
 					<!--create new button-->
 					<li>
 						<button class="waves-effect waves-light btn" id="create-new" type="button">
@@ -83,9 +89,8 @@
 					<li class="tab"><a href="#comp-tree">Component Tree</a></li>
 					<li class="tab"><a href="#FM-tree">Function-Means Tree</a></li>
 				</ul>
-
 				<!--Editer Pane  -->
-				<ul id="slide-out" class="side-nav teal lighten-5" style="transform: translateX(0%);">
+				<ul id="slide-out" class="side-nav fixed teal lighten-5" style="transform: translateX(0%);">
 					<!--Component Editer-->
 					<li>
 						<div id="comp-edit" class="card-panel teal lighten-3" style="display:none">

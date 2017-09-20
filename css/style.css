@@ -206,6 +206,15 @@ ul.collection.with-header li.collection-item textarea {
 	height: 1rem;
 }
 
+/* small screen collapse menu */
+#navbar .button-collapse.btn-floating{
+	width: 40px;
+	height: 40px;
+	margin: 10px;
+	line-height: 40px;
+}
+
+
 /**/
 @media only screen and (max-width: 992px) {
 	header,

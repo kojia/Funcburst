@@ -1445,6 +1445,7 @@ $(document).ready(function () {
     // materialize initialization
     $('.modal').modal();
     $(".button-collapse").sideNav();
+    $('.collapsible').collapsible();
     $("select").material_select();
     // SVG画面サイズ調整
     var resizeSVG = function () {
