@@ -61,6 +61,7 @@ main {
 #tree-tab, #tree-tab .tab {
 	height: 2rem;
 	line-height: 2rem;
+	text-transform: none;
 }
 #tree-tab .indicator {
 	height: 3px;
