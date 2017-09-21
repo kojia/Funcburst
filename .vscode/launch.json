@@ -9,7 +9,7 @@
             // lanunchまたはattachを指定
             "request": "launch",
             // 読み込むHTMLファイルを指定（プロジェクトからのパスを指定）
-            "file": "${workspaceRoot}/function_tree.html"
+            "file": "${workspaceRoot}/funcburst.html"
         },
         {
             "name": "起動",
