@@ -217,6 +217,10 @@ ul.collection.with-header li.collection-item textarea {
 /* Functable style */
 #functable .comp{
 	font-weight: bold;
+	width: 150px;
+}
+#functable .func{
+	width: 200px;
 }
 
 
