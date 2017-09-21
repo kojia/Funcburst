@@ -4,7 +4,7 @@
 function TreeModel() {
 
     this.data = makeNewComp("Root");
-    this.category = Object();
+    this.category = { "comp": [], "func": [], "param": [] };
     this.root = Object();
     this.fmroot = Object();
 
@@ -12,13 +12,21 @@ function TreeModel() {
 
     // set json data
     p.setData = function (json = undefined) {
+        var self = this;
         if (json) {
             this.data = json["data"];
-            this.category = json["category"];
+            var keylist = ["comp", "func", "param"]
+            keylist.forEach(function (key) {
+                if (json["category"] && json["category"][key]) {
+                    self.category[key] = json["category"][key];
+                } else {
+                    self.category[key] = [];
+                }
+            })
         }
         else {
             this.data = makeNewComp("Root");
-            this.category = Object();
+            this.category = { "comp": [], "func": [], "param": [] };
         }
     }
 
