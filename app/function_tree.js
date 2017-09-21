@@ -372,6 +372,9 @@ var ITree = function (selector) {
     };
     p.drawSVG = function (model, selectJptr = undefined) { };
     p.setZoom = function () {
+        if (this.svg.select(".treeContainer").empty()) {
+            return null;
+        }
         var zoomed = function (svg) {
             return function () {
                 svg.select(".treeContainer")
@@ -902,6 +905,60 @@ var Funcburst = function () {
 Funcburst.prototype = Object.create(ITree.prototype);
 Funcburst.prototype.constructor = Funcburst;
 
+// View Object for Functable
+var Functable = function () {
+    ITree.call(this, "#functable");
+    this.zoomer = null;
+    this.svg.append("table").attr("class", "bordered responsive-table")
+        .append("tbody");
+
+    this.drawSVG = function (model, selectJptr = undefined) {
+        var self = this;
+
+        // calculate max row size (number of function per component)
+        var funcNodes = model.root.descendants()
+            .map(function (node) {
+                return node.func;
+            });
+        var maxSize = funcNodes
+            .map(function (a) { return a.length; })
+            .reduce(function (a, b) {
+                return a > b ? a : b;
+            }, 0);
+
+        var row = this.svg.select("tbody").selectAll("tr")
+            .data(model.root.descendants());
+        row.exit().remove();
+        var enteredRow = row.enter().append("tr");
+        enteredRow.append("td").attr("class", "comp");
+        var updatedRow = enteredRow.merge(row);
+        updatedRow.select(".comp")
+            .text(function (d) {
+                return d.data.name;
+            });
+
+        var func = updatedRow.selectAll(".func")
+            .data(function (d) {
+                var emptySize = maxSize - d.func.length;
+                return d.func.concat(new Array(emptySize));
+            });
+        func.exit().remove();
+        var enteredFunc = func.enter().append("td").attr("class", "func")
+        var updatedFunc = enteredFunc.merge(func)
+            .text(function (d) {
+                if (d && d.data && d.data.name) {
+                    return d.data.name;
+                }
+                return " ";
+            });
+    }
+    this.fit = function () { };
+    this.drawSvgOnNewWindow = function () { };
+}
+// inherit
+Functable.prototype = Object.create(ITree.prototype);
+Functable.prototype.constructor = Funcburst;
+
 // node editor
 var NodeEditor = function (controller) {
     this.controller = controller;
@@ -1386,6 +1443,7 @@ var TreeController = function () {
     this.trees.push(new ComponentTree());
     this.trees.push(new FMTree());
     this.trees.push(new Funcburst());
+    this.trees.push(new Functable());
 
     // prototype
     p = TreeController.prototype;
