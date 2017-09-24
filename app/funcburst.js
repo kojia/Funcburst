@@ -746,6 +746,11 @@ var Funcburst = function () {
                     _startTheta = Math.PI / 2;
                     _endTheta = Math.PI * 3 / 2;
                 }
+                // if cell angel > pi, Large Arc Sweep Flag = 1
+                var largeArc = 0;
+                if (_endTheta - _startTheta > Math.PI) {
+                    largeArc = 1;
+                }
                 // label with PI/2 < angle < 3PI/2 is flipped vertically
                 var aveTheta = (_startTheta + _endTheta) / 2
                 if (aveTheta > Math.PI / 2 && aveTheta < Math.PI * 3 / 2) {
@@ -761,8 +766,8 @@ var Funcburst = function () {
                     var ax = _r * Math.sin(_endTheta);
                     var ay = _r * Math.cos(_endTheta) * -1;
                 }
-                return "M" + mx + " " + my + "A" + _r + " " + _r + ", 0, 0, "
-                    + sweep + "," + ax + " " + ay;
+                return "M" + mx + " " + my + "A" + _r + " " + _r + " 0 "
+                    + largeArc + " " + sweep + " " + ax + " " + ay;
             });
         // draw label to component cell
         var compLabel = this.svg.select(".cLabel").selectAll("text")
@@ -2169,7 +2174,7 @@ function styleNode(selection) {
         treeType = "compTree";
     } else if (treeSVGId == "FMTreeSVG") {
         treeType = "FMTree";
-    } else if (treeSVGId == "funcburstSVG"){
+    } else if (treeSVGId == "funcburstSVG") {
         treeType = "funcburst";
     }
 
