@@ -880,8 +880,8 @@ var Funcburst = function () {
             })
             .attr("paint-order", "stroke")
             .attr("stroke-width", "1.0px")
-            .text(function (d) {
-                return d.data.name;
+            .html(function (d) {
+                return tspanStringify(d.label);
             });
 
         // fill element of selected node
