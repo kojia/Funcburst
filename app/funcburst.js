@@ -844,7 +844,11 @@ var Funcburst = function () {
             .data(model.root.funcDescendants().concat(model.root.paramDescendants()));
         fpLabel.exit().remove();
         var enteredFpLabel = fpLabel.enter()
-            .append("g").attr("class", "label");
+            .append("g")
+            .attr("class", function (d) {
+                var type = d.isb ? "func" : "param";
+                return type + "Node label"
+            });
         enteredFpLabel.append("g").attr("class", "selected");
         enteredFpLabel.append("circle");
         enteredFpLabel.append("text");
@@ -852,37 +856,19 @@ var Funcburst = function () {
             .attr("transform", function (d) {
                 return "translate(" + radius * d.xfb + "," + radius * d.yfb + ")";
             });
-        updatedFpLabel.select("circle")
-            .attr("r", 4)
-            .attr("fill", function (d) {
-                if (d.isb == undefined) {
-                    return "orange";  // parameter
-                } else {
-                    return "red";  // function
-                }
-            })
-            .attr("stroke", "white");
         updatedFpLabel.select("text")
             .attr("text-anchor", function (d) {
                 if (d.xfb < 0) {
                     return "end";
                 }
             })
-            .attr("stroke", function (d) {
-                if (d.isb) {
-                    var type = "func";
-                } else {
-                    var type = "param";
-                }
-                if (d.data.cat) {
-                    return getCatColor(model.category, d.data.cat, type)
-                }
-            })
-            .attr("paint-order", "stroke")
-            .attr("stroke-width", "1.0px")
             .html(function (d) {
                 return tspanStringify(d.label);
             });
+        this.svg.selectAll(".label.funcNode")
+            .call(styleNode);
+        this.svg.selectAll(".label.paramNode")
+            .call(styleNode);
 
         // fill element of selected node
         updatedFpLabel.on("click", function (d) {
@@ -2183,6 +2169,8 @@ function styleNode(selection) {
         treeType = "compTree";
     } else if (treeSVGId == "FMTreeSVG") {
         treeType = "FMTree";
+    } else if (treeSVGId == "funcburstSVG"){
+        treeType = "funcburst";
     }
 
     var type = selection.attr("class").match(/(.*)Node/)[1];
@@ -2195,6 +2183,10 @@ function styleNode(selection) {
     if (treeType == "FMTree") {
         baseline["func"] = "auto";
     }
+    if (treeType == "funcburst") {
+        baseline["func"] = "auto";
+        baseline["param"] = "auto";
+    }
 
     var circleCol = {
         "comp": "teal",
@@ -2205,6 +2197,14 @@ function styleNode(selection) {
     var circleRadius = { "comp": 4, "func": 3, "param": 3 };
     if (treeType == "FMTree") {
         circleRadius = { "comp": 4, "func": 4, "param": 3 };
+    }
+    if (treeType == "funcburst") {
+        circleRadius = { "comp": 4, "func": 4, "param": 4 };
+    }
+
+    var textDx = 4;
+    if (treeType == "funcburst") {
+        textDx = 0;
     }
 
     selection.select("text")
@@ -2218,11 +2218,12 @@ function styleNode(selection) {
         .attr("paint-order", "stroke")
         .attr("stroke-width", "1.0px")
         .attr("dominant-baseline", baseline[type])
-        .attr("dx", "4");
+        .attr("dx", textDx);
 
     selection.select("circle")
         .attr("r", circleRadius[type])
-        .attr("fill", circleCol[type]);
+        .attr("fill", circleCol[type])
+        .attr("stroke", "white");
 
     // add tooltip displaying note
     selection.classed("note-tooltip", function (d, i, a) {
