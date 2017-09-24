@@ -850,17 +850,16 @@ var Funcburst = function () {
         fpLabel.exit().remove();
         var enteredFpLabel = fpLabel.enter()
             .append("g")
-            .attr("class", function (d) {
-                var type = d.isb ? "func" : "param";
-                return type + "Node label"
-            });
+            .attr("class", "label");
         enteredFpLabel.append("g").attr("class", "selected");
         enteredFpLabel.append("circle");
         enteredFpLabel.append("text");
         var updatedFpLabel = enteredFpLabel.merge(fpLabel)
             .attr("transform", function (d) {
                 return "translate(" + radius * d.xfb + "," + radius * d.yfb + ")";
-            });
+            })
+            .classed("funcNode", function (d) { return d.isb != undefined; })
+            .classed("paramNode", function (d) { return d.icb != undefined; });
         updatedFpLabel.select("text")
             .attr("text-anchor", function (d) {
                 if (d.xfb < 0) {
@@ -2178,8 +2177,7 @@ function styleNode(selection) {
         treeType = "funcburst";
     }
 
-    var type = selection.attr("class").match(/(.*)Node/)[1];
-
+    var type = selection.attr("class").match(/(\S*)Node/)[1];
     var baseline = {
         "comp": "auto",
         "func": "central",
