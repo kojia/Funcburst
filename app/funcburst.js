@@ -1476,28 +1476,30 @@ var TreeController = function () {
 };
 var trees = new TreeController();
 
-// get URL parameter and read initial data
-if (1 < document.location.search.length) {
-    var query = document.location.search.substring(1);
-    var param = query.split("&");
-    var paramMap = Object();
-    param.forEach(function (e) {
-        var _elem = e.split("=");
-        var _key = decodeURIComponent(_elem[0]);
-        var _item = decodeURIComponent(_elem[1]);
-        paramMap[_key] = _item;
-    });
-    if (paramMap["data"]) {
-        d3.json(paramMap["data"], function (error, data) {
-            if (!error) {
-                trees.model.setData(data);
-            }
-        });
-    }
-}
 
 // initialize materialize plugin and SVG window-size
 $(document).ready(function () {
+    // get URL parameter and read initial data
+    if (1 < document.location.search.length) {
+        var query = document.location.search.substring(1);
+        var param = query.split("&");
+        var paramMap = Object();
+        param.forEach(function (e) {
+            var _elem = e.split("=");
+            var _key = decodeURIComponent(_elem[0]);
+            var _item = decodeURIComponent(_elem[1]);
+            paramMap[_key] = _item;
+        });
+        if (paramMap["data"]) {
+            d3.json(paramMap["data"], function (error, data) {
+                if (!error) {
+                    trees.model.setData(data);
+                    trees.reload(fit = true);
+                }
+            });
+        }
+    }
+
     // materialize initialization
     $('.modal').modal();
     $(".button-collapse").sideNav();
@@ -1513,95 +1515,95 @@ $(document).ready(function () {
         resizeSVG();
     });
     trees.reload(fit = true);
-});
 
-// crate new file
-$("#create-new").click(function () {
-    var _createNew = function () {
-        trees.model.setData();
-        trees.reload(true);
-        highlightNode();
-    }
-    confirmDelNode("", _createNew, "Are you sure you want to create new tree? Unsaved data will be lost.");
-});
-// open file
-$(document).ready(function () {
-    $("#readjson").click(function () {
-        $(this).val("");
-    })
-    $("#readjson").change(function (e) {
-        var file = e.target.files[0];
-        // FileReader.onloadイベントに
-        // ファイル選択時に行いたい処理を書く
-        var reader = new FileReader();
-        reader.onload = function (e) {
-            try {
-                // JSONに変換
-                _data = $.parseJSON(reader.result);
-                trees.model.setData(_data);
-                trees.reload(fit = true);
-            }
-            catch (e) {
-                // JSONではないファイルを読込んだとき
-                alert("error: Invalid Data");
-            }
-            setEditPane();
-        };
-        // Textとしてファイルを読み込む
-        reader.readAsText(file);
+    // crate new file
+    $("#create-new").click(function () {
+        var _createNew = function () {
+            trees.model.setData();
+            trees.reload(true);
+            highlightNode();
+        }
+        confirmDelNode("", _createNew, "Are you sure you want to create new tree? Unsaved data will be lost.");
     });
-}, false);
-// save file
-$("#download").click(function () {
-    var filename = $(".file-path.validate").val() || "funcburstdata.json";
-    var outJson = trees.model.stringifyJson();
-    var blob = new Blob([outJson], { "type": "text/plain" });
-    if (window.navigator.msSaveBlob) {
-        window.navigator.msSaveBlob(blob, filname);
-    } else {
-        var a = document.createElement('a');
-        $("body").append(a);
-        var url = window.URL.createObjectURL(blob);
-        a.href = url;
-        a.download = filename;
-        a.click();
-        window.URL.revokeObjectURL(url);
+    // open file
+    $(document).ready(function () {
+        $("#readjson").click(function () {
+            $(this).val("");
+        })
+        $("#readjson").change(function (e) {
+            var file = e.target.files[0];
+            // FileReader.onloadイベントに
+            // ファイル選択時に行いたい処理を書く
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    // JSONに変換
+                    _data = $.parseJSON(reader.result);
+                    trees.model.setData(_data);
+                    trees.reload(fit = true);
+                }
+                catch (e) {
+                    // JSONではないファイルを読込んだとき
+                    alert("error: Invalid Data");
+                }
+                setEditPane();
+            };
+            // Textとしてファイルを読み込む
+            reader.readAsText(file);
+        });
+    }, false);
+    // save file
+    $("#download").click(function () {
+        var filename = $(".file-path.validate").val() || "funcburstdata.json";
+        var outJson = trees.model.stringifyJson();
+        var blob = new Blob([outJson], { "type": "text/plain" });
+        if (window.navigator.msSaveBlob) {
+            window.navigator.msSaveBlob(blob, filname);
+        } else {
+            var a = document.createElement('a');
+            $("body").append(a);
+            var url = window.URL.createObjectURL(blob);
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+    });
+    $("#dataURI").click(function () {
+        var nw = window.open();
+        var load = function () {
+            if (nw && nw.document && nw.document.body) {
+                var pre = nw.document.createElement("pre");
+                pre.innerHTML = trees.model.stringifyJson();
+                nw.document.body.appendChild(pre);
+            }
+            else {
+                window.setTimeout(function () { svgLoad(); }, 100);
+            }
+        }
+        load();
+    });
+    // open svg in new window
+    $("#show-svg").click(function () {
+        trees.drawSvgOnNewWindow();
+    });
+    // reload when reload button is clicked
+    $("#reload").click(function () {
+        setEditPane();
+        trees.reload(fit = true);
+    });
+    // tabObserver action fired on tab transition
+    var tabObserver = new MutationObserver(function (rec, obs) {
+        setEditPane();
+        trees.reload(fit = true);
+    });
+    // regist each tab to tabObserver
+    for (var i = 0; i < $("main div.container").length; i++) {
+        tabObserver.observe($("main div.container").get(i), {
+            attributes: true
+        })
     }
 });
-$("#dataURI").click(function () {
-    var nw = window.open();
-    var load = function () {
-        if (nw && nw.document && nw.document.body) {
-            var pre = nw.document.createElement("pre");
-            pre.innerHTML = trees.model.stringifyJson();
-            nw.document.body.appendChild(pre);
-        }
-        else {
-            window.setTimeout(function () { svgLoad(); }, 100);
-        }
-    }
-    load();
-});
-// open svg in new window
-$("#show-svg").click(function () {
-    trees.drawSvgOnNewWindow();
-});
-// reload when reload button is clicked
-$("#reload").click(function () {
-    setEditPane();
-    trees.reload(fit = true);
-});
-// tabObserver action fired on tab transition
-var tabObserver = new MutationObserver(function (rec, obs) {
-    setEditPane();
-    trees.reload(fit = true);
-});
-// regist each tab to tabObserver
-for (var i = 0; i < $("main div.container").length; i++) {
-    tabObserver.observe($("main div.container").get(i), {
-        attributes: true
-    })
-}
 
 function getNodeHeight() {
     return 15;
